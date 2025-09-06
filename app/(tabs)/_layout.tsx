@@ -1,16 +1,38 @@
-import { Tabs } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
+﻿import { Tabs } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-export default function Layout() {
+export default function TabsLayout() {
   return (
-    <>
-      <StatusBar style="auto" />
-      <Tabs screenOptions={{ headerShown: false }}>
-        <Tabs.Screen name="index" options={{ title: 'Home' }} />
-        <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
-        {/* Our new tab */}
-        <Tabs.Screen name="board" options={{ title: 'Board' }} />
-      </Tabs>
-    </>
+    <Tabs screenOptions={{ headerShown: true }}>
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'Explore',
+          tabBarIcon: ({ color, size }) => <Ionicons name="compass-outline" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="board"
+        options={{
+          title: 'Board',
+          tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" color={color} size={size} />,
+        }}
+      />
+      {/* >>> The only addition: register the new Workouts tab <<< */}
+      <Tabs.Screen
+        name="workouts"
+        options={{
+          title: 'Workouts',
+          tabBarIcon: ({ color, size }) => <Ionicons name="barbell-outline" color={color} size={size} />,
+        }}
+      />
+    </Tabs>
   );
 }
