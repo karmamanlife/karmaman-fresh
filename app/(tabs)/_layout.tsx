@@ -1,5 +1,5 @@
-﻿import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+﻿import { Tabs } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function TabsLayout() {
   return (
@@ -7,30 +7,36 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: "Home",
           tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Explore',
+          title: "Explore",
           tabBarIcon: ({ color, size }) => <Ionicons name="compass-outline" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="board"
         options={{
-          title: 'Board',
+          title: "Board",
           tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" color={color} size={size} />,
         }}
       />
-      {/* >>> The only addition: register the new Workouts tab <<< */}
       <Tabs.Screen
         name="workouts"
         options={{
-          title: 'Workouts',
+          title: "Workouts",
           tabBarIcon: ({ color, size }) => <Ionicons name="barbell-outline" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="nutrition"
+        options={{
+          title: "Nutrition",
+          tabBarIcon: ({ color, size }) => <Ionicons name="leaf-outline" color={color} size={size} />,
         }}
       />
     </Tabs>
