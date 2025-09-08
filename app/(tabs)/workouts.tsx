@@ -1,13 +1,23 @@
 ﻿// FILE: C:\Users\sngaw\karmaman-fresh\app\(tabs)\workouts.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, TextInput, Pressable, ActivityIndicator, Alert } from 'react-native';
-import { fetchWorkouts, addWorkout, completeWorkoutToday, fetchRecentLogs, computeDailyStreak, Workout } from '../../lib/workouts';
+import {
+  fetchWorkouts,
+  addWorkout,
+  completeWorkoutToday,
+  fetchRecentLogs,
+  computeDailyStreak,
+  Workout,
+  WorkoutLog,
+} from '../../lib/workouts';
 
 export default function WorkoutsScreen() {
   const [loading, setLoading] = useState(true);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
+
   const [logsLoading, setLogsLoading] = useState(true);
   const [streak, setStreak] = useState(0);
+  const [recentLogs, setRecentLogs] = useState<WorkoutLog[]>([]);
 
   // Add form
   const [name, setName] = useState('');
@@ -15,7 +25,7 @@ export default function WorkoutsScreen() {
   const [reps, setReps] = useState('5');
   const [adding, setAdding] = useState(false);
 
-  async function load() {
+  async function loadWorkouts() {
     try {
       setLoading(true);
       const ws = await fetchWorkouts();
@@ -31,6 +41,7 @@ export default function WorkoutsScreen() {
     try {
       setLogsLoading(true);
       const logs = await fetchRecentLogs(30);
+      setRecentLogs(logs);
       setStreak(computeDailyStreak(logs));
     } catch (e: any) {
       Alert.alert('Logs Error', e.message ?? String(e));
@@ -40,7 +51,7 @@ export default function WorkoutsScreen() {
   }
 
   useEffect(() => {
-    load();
+    loadWorkouts();
     loadLogs();
   }, []);
 
@@ -74,6 +85,13 @@ export default function WorkoutsScreen() {
       Alert.alert('Log Error', e.message ?? String(e));
     }
   }
+
+  // Map workout_id -> workout name for history section
+  const workoutNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    workouts.forEach((w) => m.set(w.id, w.name));
+    return m;
+  }, [workouts]);
 
   const header = useMemo(
     () => (
@@ -138,6 +156,46 @@ export default function WorkoutsScreen() {
     [streak, logsLoading, name, sets, reps, adding]
   );
 
+  const footer = useMemo(
+    () => (
+      <View style={{ padding: 16 }}>
+        <View style={{ marginTop: 8, padding: 12, borderRadius: 12, backgroundColor: '#121a2b', borderWidth: 1, borderColor: '#1f2a44' }}>
+          <Text style={{ color: 'white', fontSize: 16, fontWeight: '700' }}>History (last 30 days)</Text>
+          {logsLoading ? (
+            <View style={{ marginTop: 8 }}>
+              <ActivityIndicator />
+            </View>
+          ) : recentLogs.length === 0 ? (
+            <Text style={{ color: '#9ab', marginTop: 8 }}>No logs yet.</Text>
+          ) : (
+            <View style={{ marginTop: 8, gap: 6 }}>
+              {recentLogs.map((log) => {
+                const wname = workoutNameById.get(log.workout_id) ?? 'Workout';
+                // log.performed_on is YYYY-MM-DD (UTC)
+                return (
+                  <View
+                    key={log.id}
+                    style={{
+                      backgroundColor: '#0f1628',
+                      borderWidth: 1,
+                      borderColor: '#1f2a44',
+                      borderRadius: 10,
+                      padding: 10,
+                    }}
+                  >
+                    <Text style={{ color: 'white', fontWeight: '700' }}>{wname}</Text>
+                    <Text style={{ color: '#9ab' }}>Date: {log.performed_on}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+      </View>
+    ),
+    [logsLoading, recentLogs, workoutNameById]
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: '#0b0f1a' }}>
       {loading ? (
@@ -150,6 +208,7 @@ export default function WorkoutsScreen() {
           keyExtractor={(item) => item.id}
           ListHeaderComponent={header}
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+          ListFooterComponent={footer}
           renderItem={({ item }) => (
             <View
               style={{
