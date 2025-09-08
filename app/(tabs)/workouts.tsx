@@ -1,4 +1,4 @@
-﻿// FILE: C:\Users\sngaw\karmaman-fresh\app\(tabs)\workouts.tsx
+// FILE: C:\Users\sngaw\karmaman-fresh\app\(tabs)\workouts.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, TextInput, Pressable, ActivityIndicator, Alert } from 'react-native';
 import {
@@ -7,11 +7,12 @@ import {
   completeWorkoutToday,
   fetchRecentLogs,
   computeDailyStreak,
+  fetchServerStreak,
   Workout,
   WorkoutLog,
 } from '../../lib/workouts';
 
-// Helper: get first integer from a string; fall back to def
+// Get first integer in a string; fallback to default
 function parseNum(input: string, def: number): number {
   const m = (input ?? '').toString().match(/\d+/);
   return m ? parseInt(m[0], 10) : def;
@@ -48,7 +49,12 @@ export default function WorkoutsScreen() {
       setLogsLoading(true);
       const logs = await fetchRecentLogs(30);
       setRecentLogs(logs);
-      setStreak(computeDailyStreak(logs));
+      try {
+        const s = await fetchServerStreak('Australia/Sydney');
+        setStreak(typeof s === 'number' ? s : 0);
+      } catch {
+        setStreak(computeDailyStreak(logs));
+      }
     } catch (e: any) {
       Alert.alert('Logs Error', e.message ?? String(e));
     } finally {
@@ -92,7 +98,6 @@ export default function WorkoutsScreen() {
     }
   }
 
-  // Map workout_id -> workout name for history section
   const workoutNameById = useMemo(() => {
     const m = new Map<string, string>();
     workouts.forEach((w) => m.set(w.id, w.name));
@@ -104,14 +109,14 @@ export default function WorkoutsScreen() {
       <View style={{ gap: 8, padding: 16, backgroundColor: '#0b0f1a' }}>
         <Text style={{ color: 'white', fontSize: 20, fontWeight: '700' }}>Workouts</Text>
         <View style={{ padding: 12, borderRadius: 12, backgroundColor: '#121a2b', borderWidth: 1, borderColor: '#1f2a44' }}>
-          <Text style={{ color: '#bcd', fontSize: 12, marginBottom: 6 }}>Daily Streak</Text>
+          <Text style={{ color: '#bcd', fontSize: 12, marginBottom: 6 }}>Daily Streak (AEST)</Text>
           {logsLoading ? (
             <ActivityIndicator />
           ) : (
             <Text style={{ color: 'white', fontSize: 28, fontWeight: '800' }}>{streak}🔥</Text>
           )}
           <Text style={{ color: '#8aa', fontSize: 12, marginTop: 4 }}>
-            Counts consecutive days (UTC) with any logged workout.
+            Server-calculated consecutive days (Australia/Sydney) with any logged workout.
           </Text>
         </View>
 
@@ -147,12 +152,7 @@ export default function WorkoutsScreen() {
           <Pressable
             disabled={adding}
             onPress={onAddWorkout}
-            style={{
-              backgroundColor: adding ? '#2a3a5a' : '#345ff6',
-              padding: 12,
-              borderRadius: 10,
-              alignItems: 'center',
-            }}
+            style={{ backgroundColor: adding ? '#2a3a5a' : '#345ff6', padding: 12, borderRadius: 10, alignItems: 'center' }}
           >
             <Text style={{ color: 'white', fontWeight: '700' }}>{adding ? 'Adding…' : 'Add Workout'}</Text>
           </Pressable>
@@ -191,7 +191,7 @@ export default function WorkoutsScreen() {
                     }}
                   >
                     <Text style={{ color: 'white', fontWeight: '700' }}>{wname}</Text>
-                    <Text style={{ color: '#9ab' }}>Date: {log.performed_on}</Text>
+                    <Text style={{ color: '#9ab' }}>Date: {log.for_date}</Text>
                   </View>
                 );
               })}
