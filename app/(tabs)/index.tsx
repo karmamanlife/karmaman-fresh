@@ -1,9 +1,10 @@
-﻿// FILE: app/(tabs)/index.tsx
-import { View, Text } from "react-native";
+﻿import { View, Text } from "react-native";
+
 export default function Home() {
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0b0f1a" }}>
-      <Text style={{ color: "white", fontSize: 20, fontWeight: "700" }}>Home</Text>
+      <Text style={{ color: "white", fontSize: 20, fontWeight: "700" }}>Home Tab Works!</Text>
+      <Text style={{ color: "#9ab", marginTop: 8 }}>Router is fixed</Text>
     </View>
   );
 }
