@@ -37,3 +37,7 @@ yarn-error.*
 *.tsbuildinfo
 
 .expo/
+.env
+.env.*.local
+.expo/
+node_modules/
