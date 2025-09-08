@@ -1,6 +1,5 @@
-﻿import { Redirect } from 'expo-router';
-
+﻿// FILE: app/index.tsx
+import { Redirect } from "expo-router";
 export default function Index() {
-  // Land inside the tabs group by default
-  return <Redirect href='/(tabs)/' />;
+  return <Redirect href="/(tabs)" />;
 }
