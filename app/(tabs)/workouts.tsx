@@ -11,6 +11,12 @@ import {
   WorkoutLog,
 } from '../../lib/workouts';
 
+// Helper: get first integer from a string; fall back to def
+function parseNum(input: string, def: number): number {
+  const m = (input ?? '').toString().match(/\d+/);
+  return m ? parseInt(m[0], 10) : def;
+}
+
 export default function WorkoutsScreen() {
   const [loading, setLoading] = useState(true);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
@@ -62,8 +68,8 @@ export default function WorkoutsScreen() {
     }
     setAdding(true);
     try {
-      const setsNum = Number(sets) || 5;
-      const repsNum = Number(reps) || 5;
+      const setsNum = parseNum(sets, 5);
+      const repsNum = parseNum(reps, 5);
       const w = await addWorkout(name.trim(), setsNum, repsNum);
       setWorkouts((prev) => [...prev, w]);
       setName('');
@@ -110,7 +116,9 @@ export default function WorkoutsScreen() {
         </View>
 
         <View style={{ marginTop: 8, padding: 12, borderRadius: 12, backgroundColor: '#121a2b', borderWidth: 1, borderColor: '#1f2a44', gap: 8 }}>
-          <Text style={{ color: '#bcd', fontSize: 12 }}>Add Workout</Text>
+          <Text style={{ color: '#bcd', fontSize: 12 }}>
+            Add Workout <Text style={{ color: '#7fb' }}>(reps accepts 10 or 10-12)</Text>
+          </Text>
           <TextInput
             value={name}
             onChangeText={setName}
@@ -171,7 +179,6 @@ export default function WorkoutsScreen() {
             <View style={{ marginTop: 8, gap: 6 }}>
               {recentLogs.map((log) => {
                 const wname = workoutNameById.get(log.workout_id) ?? 'Workout';
-                // log.performed_on is YYYY-MM-DD (UTC)
                 return (
                   <View
                     key={log.id}
