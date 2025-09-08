@@ -1,4 +1,14 @@
 ﻿// FILE: C:\Users\sngaw\karmaman-fresh\app\(tabs)\_layout.tsx
+import { Tabs } from "expo-router"
+
+# === YOU ARE IN POWERSHELL ===
+# Resolve merge conflict in app\(tabs)\_layout.tsx and finish the merge.
+
+cd "C:\Users\sngaw\karmaman-fresh"
+
+# Write the correct Tabs layout (5 tabs)
+@'
+// FILE: C:\Users\sngaw\karmaman-fresh\app\(tabs)\_layout.tsx
 import { Tabs } from "expo-router";
 import React from "react";
 
