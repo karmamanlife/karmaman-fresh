@@ -8,30 +8,15 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-
-// Mock functions for now - replace with your actual lib/workouts imports
-const mockFetchWorkouts = async () => {
-  return [
-    { id: "1", name: "Push-ups", sets: 3, reps: 10 },
-    { id: "2", name: "Squats", sets: 4, reps: 15 },
-  ];
-};
-
-const mockAddWorkout = async (name: string, sets: number, reps: number) => {
-  return { id: Date.now().toString(), name, sets, reps };
-};
-
-const mockCompleteWorkoutToday = async (workoutId: string) => {
-  return { success: true };
-};
-
-const mockFetchRecentLogs = async (days: number) => {
-  return [];
-};
-
-const mockFetchServerStreak = async (timezone: string) => {
-  return 5; // Mock streak
-};
+import {
+  fetchWorkouts,
+  addWorkout,
+  completeWorkoutToday,
+  fetchRecentLogs,
+  fetchServerStreak,
+  Workout,
+  WorkoutLog,
+} from "../../lib/workouts";
 
 function parseNum(input: string, def: number): number {
   const m = (input ?? "").toString().match(/\d+/);
@@ -40,9 +25,9 @@ function parseNum(input: string, def: number): number {
 
 export default function WorkoutsScreen() {
   const [loading, setLoading] = useState(true);
-  const [workouts, setWorkouts] = useState<any[]>([]);
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [streak, setStreak] = useState(0);
-  const [recentLogs, setRecentLogs] = useState<any[]>([]);
+  const [recentLogs, setRecentLogs] = useState<WorkoutLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
 
   // Add form
@@ -54,7 +39,7 @@ export default function WorkoutsScreen() {
   async function loadWorkouts() {
     try {
       setLoading(true);
-      const ws = await mockFetchWorkouts();
+      const ws = await fetchWorkouts();
       setWorkouts(ws);
     } catch (e: any) {
       Alert.alert("Error", e.message ?? String(e));
@@ -66,9 +51,9 @@ export default function WorkoutsScreen() {
   async function loadLogs() {
     try {
       setLogsLoading(true);
-      const logs = await mockFetchRecentLogs(30);
+      const logs = await fetchRecentLogs(30);
       setRecentLogs(logs);
-      const s = await mockFetchServerStreak("Australia/Sydney");
+      const s = await fetchServerStreak("Australia/Sydney");
       setStreak(typeof s === "number" ? s : 0);
     } catch (e: any) {
       Alert.alert("Logs Error", e.message ?? String(e));
@@ -91,7 +76,7 @@ export default function WorkoutsScreen() {
     try {
       const setsNum = parseNum(sets, 3);
       const repsNum = parseNum(reps, 10);
-      const w = await mockAddWorkout(name.trim(), setsNum, repsNum);
+      const w = await addWorkout(name.trim(), setsNum, repsNum);
       setWorkouts((prev) => [...prev, w]);
       setName("");
       setSets("3");
@@ -106,13 +91,19 @@ export default function WorkoutsScreen() {
 
   async function onCompleteToday(workoutId: string) {
     try {
-      await mockCompleteWorkoutToday(workoutId);
+      await completeWorkoutToday(workoutId);
       await loadLogs();
       Alert.alert("Nice!", "Logged for today.");
     } catch (e: any) {
       Alert.alert("Log Error", e.message ?? String(e));
     }
   }
+
+  const workoutNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    workouts.forEach((w) => m.set(w.id, w.name));
+    return m;
+  }, [workouts]);
 
   const header = useMemo(
     () => (
@@ -237,6 +228,58 @@ export default function WorkoutsScreen() {
     [streak, logsLoading, name, sets, reps, adding]
   );
 
+  const footer = useMemo(
+    () => (
+      <View style={{ padding: 16 }}>
+        <View
+          style={{
+            marginTop: 8,
+            padding: 12,
+            borderRadius: 12,
+            backgroundColor: "#121a2b",
+            borderWidth: 1,
+            borderColor: "#1f2a44",
+          }}
+        >
+          <Text style={{ color: "white", fontSize: 16, fontWeight: "700" }}>
+            History (last 30 days)
+          </Text>
+          {logsLoading ? (
+            <View style={{ marginTop: 8 }}>
+              <ActivityIndicator color="#fff" />
+            </View>
+          ) : recentLogs.length === 0 ? (
+            <Text style={{ color: "#9ab", marginTop: 8 }}>No logs yet.</Text>
+          ) : (
+            <View style={{ marginTop: 8, gap: 6 }}>
+              {recentLogs.map((log) => {
+                const wname = workoutNameById.get(log.workout_id) ?? "Workout";
+                return (
+                  <View
+                    key={log.id}
+                    style={{
+                      backgroundColor: "#0f1628",
+                      borderWidth: 1,
+                      borderColor: "#1f2a44",
+                      borderRadius: 10,
+                      padding: 10,
+                    }}
+                  >
+                    <Text style={{ color: "white", fontWeight: "700" }}>{wname}</Text>
+                    <Text style={{ color: "#9ab" }}>
+                      Date: {log.for_date || log.performed_on.split('T')[0]}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+      </View>
+    ),
+    [logsLoading, recentLogs, workoutNameById]
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: "#0b0f1a" }}>
       {loading ? (
@@ -249,6 +292,7 @@ export default function WorkoutsScreen() {
           keyExtractor={(item) => item.id}
           ListHeaderComponent={header}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+          ListFooterComponent={footer}
           contentContainerStyle={{ paddingBottom: 20 }}
           renderItem={({ item }) => (
             <View
