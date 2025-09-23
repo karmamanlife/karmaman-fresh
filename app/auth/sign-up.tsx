@@ -28,7 +28,7 @@ export default function SignUpScreen() {
       }
 
       // FIXED: Go to working tabs instead of broken onboarding
-      r.replace("/(tabs)");
+      r.replace("/onboarding/profile-setup");
     } catch (e: any) {
       setErr(e?.message ?? String(e));
       console.warn("Sign-up error:", e);

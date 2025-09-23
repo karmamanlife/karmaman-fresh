@@ -90,7 +90,7 @@ export default function NutritionOnboarding() {
     try {
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await getSupabase().auth.getUser();
 
       if (!user) {
         Alert.alert('Error', 'No user session found');
@@ -104,7 +104,7 @@ export default function NutritionOnboarding() {
       const macros = calculateMacros({ tdee: computedTDEE, goal });
 
       // Persist profile
-      const { error } = await supabase.from('user_nutrition_profiles').insert({
+      const { error } = await getSupabase().from('user_nutrition_profiles').insert({
         user_id: user.id,
         age: parseInt(age, 10),
         gender,
