@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
-import { supabase } from "../../lib/supabase";
+import { getSupabase } from '../../src/lib/supabase';
 
 export default function AuthCallback() {
   const router = useRouter();

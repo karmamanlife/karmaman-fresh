@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,7 @@ export default function WelcomeScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.logo}>ðŸ¥‹</Text>
+          <Text style={styles.logo}>🥋</Text>
           <Text style={styles.title}>Karmaman</Text>
           <Text style={styles.subtitle}>
             Your personal fitness and nutrition companion
@@ -33,15 +33,15 @@ export default function WelcomeScreen() {
 
         <View style={styles.features}>
           <View style={styles.feature}>
-            <Text style={styles.featureIcon}>ðŸ“Š</Text>
+            <Text style={styles.featureIcon}>📊</Text>
             <Text style={styles.featureText}>Track nutrition and macros</Text>
           </View>
           <View style={styles.feature}>
-            <Text style={styles.featureIcon}>ðŸ’ª</Text>
+            <Text style={styles.featureIcon}>💪</Text>
             <Text style={styles.featureText}>Log workouts and progress</Text>
           </View>
           <View style={styles.feature}>
-            <Text style={styles.featureIcon}>ðŸŽ¯</Text>
+            <Text style={styles.featureIcon}>🎯</Text>
             <Text style={styles.featureText}>Achieve your fitness goals</Text>
           </View>
         </View>

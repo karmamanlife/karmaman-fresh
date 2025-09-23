@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../../src/lib/supabase';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
@@ -63,7 +63,7 @@ export default function ResetPasswordScreen() {
       >
         <Text style={styles.title}>Reset Password</Text>
         <Text style={styles.subtitle}>
-          Enter your account email and weâ€™ll send you a reset link
+          Enter your account email and we’ll send you a reset link
         </Text>
 
         <View style={styles.field}>

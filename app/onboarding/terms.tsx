@@ -1,4 +1,4 @@
-﻿const handleAccept = async () => {
+const handleAccept = async () => {
   setIsLoading(true);
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -9,7 +9,7 @@
       return;
     }
 
-    // âœ… Record agreement without agreed_at (DB default handles timestamp)
+    // ✅ Record agreement without agreed_at (DB default handles timestamp)
     const { error } = await supabase
       .from('user_agreements')
       .insert({
@@ -24,7 +24,7 @@
       return;
     }
 
-    // âœ… Go to Complete screen after successful save
+    // ✅ Go to Complete screen after successful save
     router.replace('/onboarding/complete');
   } catch (error) {
     console.error('Error accepting terms:', error);

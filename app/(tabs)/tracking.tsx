@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 // Adjust this import to match your project structure if needed:
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '../../src/lib/supabase';
 
 type Gender = 'male' | 'female';
 type ActivityLevel =
@@ -61,20 +61,20 @@ export default function NutritionOnboarding() {
     const w = parseFloat(weight);
 
     if (Number.isNaN(ageNum) || ageNum < 12 || ageNum > 100) {
-      Alert.alert('Invalid Age', 'Please enter a valid age (12ï¿½100).');
+      Alert.alert('Invalid Age', 'Please enter a valid age (12�100).');
       return false;
     }
     if (Number.isNaN(h) || h < 120 || h > 250) {
       Alert.alert(
         'Invalid Height',
-        'Please enter a valid height in centimeters (120ï¿½250).'
+        'Please enter a valid height in centimeters (120�250).'
       );
       return false;
     }
     if (Number.isNaN(w) || w < 35 || w > 300) {
       Alert.alert(
         'Invalid Weight',
-        'Please enter a valid weight in kilograms (35ï¿½300).'
+        'Please enter a valid weight in kilograms (35�300).'
       );
       return false;
     }
@@ -212,9 +212,9 @@ export default function NutritionOnboarding() {
               onValueChange={(v) => setActivityLevel(v as ActivityLevel)}
             >
               <Picker.Item label="Sedentary (little/no exercise)" value="sedentary" />
-              <Picker.Item label="Light (1ï¿½3x/week)" value="light" />
-              <Picker.Item label="Moderate (3ï¿½5x/week)" value="moderate" />
-              <Picker.Item label="Active (6ï¿½7x/week)" value="active" />
+              <Picker.Item label="Light (1�3x/week)" value="light" />
+              <Picker.Item label="Moderate (3�5x/week)" value="moderate" />
+              <Picker.Item label="Active (6�7x/week)" value="active" />
               <Picker.Item label="Very Active (hard exercise & job)" value="very_active" />
             </Picker>
           </View>
@@ -238,13 +238,13 @@ export default function NutritionOnboarding() {
           <View style={styles.previewRow}>
             <Text style={styles.previewLabel}>BMR</Text>
             <Text style={styles.previewValue}>
-              {Number.isFinite(bmr) ? Math.round(bmr) : 'ï¿½'} kcal
+              {Number.isFinite(bmr) ? Math.round(bmr) : '�'} kcal
             </Text>
           </View>
           <View style={styles.previewRow}>
             <Text style={styles.previewLabel}>TDEE</Text>
             <Text style={styles.previewValue}>
-              {Number.isFinite(tdee) ? Math.round(tdee) : 'ï¿½'} kcal
+              {Number.isFinite(tdee) ? Math.round(tdee) : '�'} kcal
             </Text>
           </View>
 
@@ -390,7 +390,7 @@ function calculateMacros({
 }
 
 function fmt(n: number): string {
-  if (!Number.isFinite(n)) return 'ï¿½';
+  if (!Number.isFinite(n)) return '�';
   return Math.round(n).toString();
 }
 

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -207,7 +207,7 @@ export default function MealDetailScreen() {
                   )}
                   <Text style={styles.foodQuantity}>{servings} serving{servings !== 1 ? 's' : ''}</Text>
                   <Text style={styles.foodMacros}>
-                    {calories} cal â€¢ P: {protein}g â€¢ C: {carbs}g â€¢ F: {fat}g
+                    {calories} cal • P: {protein}g • C: {carbs}g • F: {fat}g
                   </Text>
                 </View>
                 

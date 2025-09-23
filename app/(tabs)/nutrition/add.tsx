@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -114,7 +114,7 @@ export default function AddFoodScreen() {
       <View style={styles.foodInfo}>
         <Text style={styles.foodName}>{item.name}</Text>
         <Text style={styles.foodDetails}>
-          {item.calories_per_100g || item.calories} cal per 100g â€¢ {item.brand || 'Custom'}
+          {item.calories_per_100g || item.calories} cal per 100g • {item.brand || 'Custom'}
         </Text>
         {(item.protein_per_100g || item.protein) ? (
           <Text style={styles.macros}>
@@ -142,7 +142,7 @@ export default function AddFoodScreen() {
         <View style={styles.foodInfo}>
           <Text style={styles.foodName}>{foodData.name}</Text>
           <Text style={styles.foodDetails}>
-            {foodData.calories} cal per 100g â€¢ {foodData.brand}
+            {foodData.calories} cal per 100g • {foodData.brand}
           </Text>
           <Text style={styles.macros}>
             P: {foodData.protein}g | C: {foodData.carbs}g | F: {foodData.fat}g

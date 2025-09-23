@@ -1,5 +1,5 @@
-﻿const handleContinue = () => {
+const handleContinue = () => {
   setLoading(true);
-  router.replace('/(tabs)'); // âœ… into the app
+  router.replace('/(tabs)'); // ✅ into the app
 };
 

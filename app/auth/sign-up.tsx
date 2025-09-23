@@ -1,9 +1,9 @@
-﻿// File: app/auth/sign-up.tsx
+// File: app/auth/sign-up.tsx
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { getSupabase } from "@/lib/supabase";
+import { getSupabase } from "../../src/lib/supabase";
 
 export default function SignUpScreen() {
   const r = useRouter();

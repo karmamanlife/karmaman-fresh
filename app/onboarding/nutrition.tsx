@@ -1,4 +1,4 @@
-﻿// inside nutrition.tsx
+// inside nutrition.tsx
 const handleComplete = async () => {
   if (!validateForm()) return;
   setLoading(true);
@@ -27,7 +27,7 @@ const handleComplete = async () => {
     });
     if (error) { console.error(error); Alert.alert('Error','Failed to save your profile.'); return; }
 
-    router.replace('/onboarding/terms'); // âœ… Terms next
+    router.replace('/onboarding/terms'); // ✅ Terms next
   } catch (e) {
     console.error(e); Alert.alert('Error','Something went wrong.');
   } finally { setLoading(false); }

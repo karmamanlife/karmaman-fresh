@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { router } from 'expo-router';
-import { supabase } from '../../lib/supabase'; // RELATIVE import
+import { getSupabase } from '../../src/lib/supabase';
 
 type Post = {
   id: string;

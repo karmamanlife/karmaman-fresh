@@ -1,4 +1,4 @@
-﻿import { supabase } from "@/lib/supabase";
+import { supabase } from "../src/lib/supabase";
 
 // USDA API Configuration
 const USDA_API_BASE = 'https://api.nal.usda.gov/fdc/v1';
