@@ -9,7 +9,7 @@ export default function SignUpScreen() {
   const r = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [secure, setSecure] = useState(true);   // eye toggle
+  const [secure, setSecure] = useState(true);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -19,19 +19,16 @@ export default function SignUpScreen() {
     setErr(null); setLoading(true);
     try {
       const s = getSupabase();
-
-      // No email redirect. Create the user.
       const { data, error } = await s.auth.signUp({ email, password });
       if (error) throw error;
 
-      // If confirmations are still ON in Supabase, session may be null. Try to sign in anyway.
       if (!data.session) {
         const { error: siErr } = await s.auth.signInWithPassword({ email, password });
         if (siErr) throw siErr;
       }
 
-      // Go straight to your existing onboarding screen (change path if yours differs)
-      r.replace("/onboarding/nutrition");
+      // FIXED: Go to working tabs instead of broken onboarding
+      r.replace("/(tabs)");
     } catch (e: any) {
       setErr(e?.message ?? String(e));
       console.warn("Sign-up error:", e);
@@ -43,7 +40,6 @@ export default function SignUpScreen() {
   return (
     <View style={{ flex: 1, padding: 16, gap: 12, justifyContent: "center" }}>
       <Text style={{ fontSize: 20, fontWeight: "600" }}>Create your account</Text>
-
       <TextInput
         placeholder="Email"
         autoCapitalize="none"
@@ -52,10 +48,9 @@ export default function SignUpScreen() {
         onChangeText={setEmail}
         style={{ borderWidth: 1, borderColor: "#ccc", padding: 10, borderRadius: 8 }}
       />
-
       <View style={{ position: "relative" }}>
         <TextInput
-          key={secure ? "pwd-secure" : "pwd-open"} // force re-mount on RN Web when toggled
+          key={secure ? "pwd-secure" : "pwd-open"}
           placeholder="Password"
           secureTextEntry={secure}
           value={password}
@@ -72,7 +67,6 @@ export default function SignUpScreen() {
           <Ionicons name={secure ? "eye-off" : "eye"} size={20} color="#666" />
         </Pressable>
       </View>
-
       <Pressable
         onPress={handleSignUp}
         disabled={loading || !email || !password}
@@ -80,9 +74,7 @@ export default function SignUpScreen() {
       >
         {loading ? <ActivityIndicator /> : <Text style={{ color: "#fff" }}>Sign up</Text>}
       </Pressable>
-
       {err ? <Text style={{ color: "red" }}>{err}</Text> : null}
-
       <Pressable onPress={() => r.replace("/auth/sign-in")} style={{ marginTop: 8 }}>
         <Text style={{ color: "#555" }}>Already have an account? Sign in</Text>
       </Pressable>

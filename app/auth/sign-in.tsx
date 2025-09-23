@@ -1,38 +1,81 @@
-﻿import { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
-import { router } from 'expo-router';
-import { supabase } from '../../lib/supabase';
+﻿// File: app/auth/sign-in.tsx
+import { useState } from "react";
+import { View, Text, TextInput, Pressable, ActivityIndicator } from "react-native";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { getSupabase } from "@/lib/supabase";
 
-export default function SignIn() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+export default function SignInScreen() {
+  const r = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [secure, setSecure] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
-  async function onSignIn() {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return Alert.alert('Sign in failed', error.message);
-    router.replace('/(tabs)/board');
-  }
+  const toggleSecure = () => setSecure(s => !s);
 
-  async function onSignUp() {
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) return Alert.alert('Sign up failed', error.message);
-    Alert.alert('Account created', 'Now tap Sign In.');
+  async function handleSignIn() {
+    setErr(null); setLoading(true);
+    try {
+      const s = getSupabase();
+      const { error } = await s.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      r.replace("/(tabs)"); // CONSISTENT with sign-up
+    } catch (e: any) {
+      setErr(e?.message ?? String(e));
+      console.warn("Sign-in error:", e);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <View style={s.c}>
-      <Text style={s.h}>Karmaman Sign In</Text>
-      <TextInput placeholder="Email" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} style={s.input} />
-      <TextInput placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} style={s.input} />
-      <Button title="Sign In" onPress={onSignIn} />
-      <View style={{ height: 8 }} />
-      <Button title="Sign Up (first time)" onPress={onSignUp} />
+    <View style={{ flex: 1, padding: 16, gap: 12, justifyContent: "center" }}>
+      <Text style={{ fontSize: 20, fontWeight: "600" }}>Welcome back</Text>
+      
+      <TextInput
+        placeholder="Email"
+        autoCapitalize="none"
+        keyboardType="email-address"
+        value={email}
+        onChangeText={setEmail}
+        style={{ borderWidth: 1, borderColor: "#ccc", padding: 10, borderRadius: 8 }}
+      />
+      
+      <View style={{ position: "relative" }}>
+        <TextInput
+          key={secure ? "pwd-secure" : "pwd-open"}
+          placeholder="Password"
+          secureTextEntry={secure}
+          value={password}
+          onChangeText={setPassword}
+          style={{ borderWidth: 1, borderColor: "#ccc", padding: 10, borderRadius: 8, paddingRight: 48 }}
+        />
+        <Pressable
+          onPress={toggleSecure}
+          accessibilityRole="button"
+          accessibilityLabel="Toggle password visibility"
+          style={{ position: "absolute", right: 6, top: 0, bottom: 0, width: 36, justifyContent: "center", alignItems: "center", zIndex: 10 }}
+          hitSlop={10}
+        >
+          <Ionicons name={secure ? "eye-off" : "eye"} size={20} color="#666" />
+        </Pressable>
+      </View>
+      
+      <Pressable
+        onPress={handleSignIn}
+        disabled={loading || !email || !password}
+        style={{ backgroundColor: loading ? "#aaa" : "#000", padding: 12, borderRadius: 8, alignItems: "center" }}
+      >
+        {loading ? <ActivityIndicator /> : <Text style={{ color: "#fff" }}>Sign in</Text>}
+      </Pressable>
+      
+      {err ? <Text style={{ color: "red" }}>{err}</Text> : null}
+      
+      <Pressable onPress={() => r.replace("/auth/sign-up")} style={{ marginTop: 8 }}>
+        <Text style={{ color: "#555" }}>Create an account</Text>
+      </Pressable>
     </View>
   );
 }
-
-const s = StyleSheet.create({
-  c: { flex: 1, justifyContent: 'center', padding: 20, gap: 10 },
-  h: { fontSize: 24, fontWeight: '700', marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 12 },
-});
