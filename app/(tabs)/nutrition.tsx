@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, TextInput, Modal } from 'react-native';
 import { getSupabase } from '../../src/lib/supabase';
+import { searchFood, getFoodNutrients } from '../../src/services/foodApi';
 
 export default function NutritionScreen() {
-  const [selectedTab, setSelectedTab] = useState('overview');
   const [macros, setMacros] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedMeal, setSelectedMeal] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
     loadUserData();
@@ -33,23 +38,83 @@ export default function NutritionScreen() {
     }
   };
 
-  const calculatePerMealMacros = () => {
-    if (!macros || !profile) return null;
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    
+    setSearching(true);
+    try {
+      const results = await searchFood(searchQuery);
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleSelectFood = async (food) => {
+    try {
+      const nutrients = await getFoodNutrients(food.food_name);
+      
+      if (nutrients) {
+        const supabase = getSupabase();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        // Cache the food
+        await supabase.from('food_cache').upsert({
+          food_name: nutrients.food_name,
+          brand: nutrients.brand_name,
+          calories: nutrients.nf_calories,
+          protein: nutrients.nf_protein,
+          carbs: nutrients.nf_total_carbohydrate,
+          fats: nutrients.nf_total_fat,
+          serving_size: nutrients.serving_qty,
+          serving_unit: nutrients.serving_unit
+        });
+
+        // Log the meal
+        await supabase.from('user_meals_history').insert({
+          user_id: user.id,
+          meal_number: selectedMeal,
+          meal_name: `Meal ${selectedMeal}`,
+          foods: [{
+            name: nutrients.food_name,
+            calories: nutrients.nf_calories,
+            protein: nutrients.nf_protein,
+            carbs: nutrients.nf_total_carbohydrate,
+            fats: nutrients.nf_total_fat,
+            quantity: nutrients.serving_qty
+          }],
+          total_calories: nutrients.nf_calories,
+          total_protein: nutrients.nf_protein,
+          total_carbs: nutrients.nf_total_carbohydrate,
+          total_fats: nutrients.nf_total_fat
+        });
+
+        setModalVisible(false);
+        setSearchQuery('');
+        setSearchResults([]);
+      }
+    } catch (error) {
+      console.error('Food select error:', error);
+    }
+  };
+
+  const openLogModal = (mealNumber) => {
+    setSelectedMeal(mealNumber);
+    setModalVisible(true);
+  };
+
+  const renderMealSlots = () => {
+    if (!profile || !macros) return null;
     
     const mealsPerDay = profile.meals_per_day || 3;
-    return {
+    const perMeal = {
       calories: Math.round(macros.daily_calories / mealsPerDay),
       protein: Math.round(macros.daily_protein / mealsPerDay),
       carbs: Math.round(macros.daily_carbs / mealsPerDay),
       fats: Math.round(macros.daily_fats / mealsPerDay)
     };
-  };
-
-  const renderMealSlots = () => {
-    if (!profile) return null;
-    
-    const mealsPerDay = profile.meals_per_day || 3;
-    const perMeal = calculatePerMealMacros();
     
     return Array.from({ length: mealsPerDay }, (_, i) => (
       <View key={i} style={styles.mealCard}>
@@ -60,114 +125,127 @@ export default function NutritionScreen() {
           <Text style={styles.mealMacroText}>C: {perMeal.carbs}g</Text>
           <Text style={styles.mealMacroText}>F: {perMeal.fats}g</Text>
         </View>
-        <Pressable style={styles.logButton}>
+        <Pressable style={styles.logButton} onPress={() => openLogModal(i + 1)}>
           <Text style={styles.logButtonText}>Log Meal</Text>
         </Pressable>
       </View>
     ));
   };
 
-  return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Nutrition</Text>
-      
-      <View style={styles.tabContainer}>
-        <Pressable
-          style={[styles.tab, selectedTab === 'overview' && styles.activeTab]}
-          onPress={() => setSelectedTab('overview')}
-        >
-          <Text style={styles.tabText}>Overview</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.tab, selectedTab === 'meals' && styles.activeTab]}
-          onPress={() => setSelectedTab('meals')}
-        >
-          <Text style={styles.tabText}>Meals</Text>
-        </Pressable>
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#000" />
       </View>
+    );
+  }
 
-      {selectedTab === 'overview' && (
-        <View style={styles.content}>
-          {loading ? (
-            <ActivityIndicator size="large" color="#000" />
-          ) : macros ? (
-            <>
-              <Text style={styles.subtitle}>Your Daily Targets</Text>
-              
-              <View style={styles.macroCard}>
-                <View style={styles.macroRow}>
-                  <Text style={styles.macroLabel}>Calories</Text>
-                  <Text style={styles.macroValue}>{Math.round(macros.daily_calories)}</Text>
-                </View>
-                
-                <View style={styles.macroRow}>
-                  <Text style={styles.macroLabel}>Protein</Text>
-                  <Text style={styles.macroValue}>{Math.round(macros.daily_protein)}g</Text>
-                </View>
-                
-                <View style={styles.macroRow}>
-                  <Text style={styles.macroLabel}>Carbs</Text>
-                  <Text style={styles.macroValue}>{Math.round(macros.daily_carbs)}g</Text>
-                </View>
-                
-                <View style={styles.macroRow}>
-                  <Text style={styles.macroLabel}>Fats</Text>
-                  <Text style={styles.macroValue}>{Math.round(macros.daily_fats)}g</Text>
-                </View>
+  return (
+    <>
+      <ScrollView style={styles.container}>
+        <Text style={styles.title}>Nutrition</Text>
+        
+        {macros && (
+          <>
+            <Text style={styles.subtitle}>Daily Targets</Text>
+            <View style={styles.macroCard}>
+              <View style={styles.macroRow}>
+                <Text style={styles.macroLabel}>Calories</Text>
+                <Text style={styles.macroValue}>{Math.round(macros.daily_calories)}</Text>
               </View>
-
-              <View style={styles.metaCard}>
-                <Text style={styles.metaText}>BMR: {Math.round(macros.bmr)} cal</Text>
-                <Text style={styles.metaText}>TDEE: {Math.round(macros.tdee)} cal</Text>
-                {profile && <Text style={styles.metaText}>Meals per day: {profile.meals_per_day}</Text>}
+              <View style={styles.macroRow}>
+                <Text style={styles.macroLabel}>Protein</Text>
+                <Text style={styles.macroValue}>{Math.round(macros.daily_protein)}g</Text>
               </View>
-            </>
-          ) : (
-            <Text style={styles.noData}>Complete your profile setup to see macro targets</Text>
-          )}
-        </View>
-      )}
+              <View style={styles.macroRow}>
+                <Text style={styles.macroLabel}>Carbs</Text>
+                <Text style={styles.macroValue}>{Math.round(macros.daily_carbs)}g</Text>
+              </View>
+              <View style={styles.macroRow}>
+                <Text style={styles.macroLabel}>Fats</Text>
+                <Text style={styles.macroValue}>{Math.round(macros.daily_fats)}g</Text>
+              </View>
+            </View>
 
-      {selectedTab === 'meals' && (
-        <View style={styles.content}>
-          {loading ? (
-            <ActivityIndicator size="large" color="#000" />
-          ) : macros && profile ? (
-            <>
-              <Text style={styles.subtitle}>Your Meal Plan</Text>
-              <Text style={styles.mealInfo}>Split your daily macros across {profile.meals_per_day} meals</Text>
-              {renderMealSlots()}
-            </>
-          ) : (
-            <Text style={styles.noData}>Complete your profile setup to see meal plan</Text>
-          )}
+            <View style={styles.metaCard}>
+              <Text style={styles.metaText}>BMR: {Math.round(macros.bmr)} cal • TDEE: {Math.round(macros.tdee)} cal</Text>
+              {profile && <Text style={styles.metaText}>Meals per day: {profile.meals_per_day}</Text>}
+            </View>
+
+            <Text style={styles.subtitle}>Your Meals</Text>
+            {renderMealSlots()}
+          </>
+        )}
+      </ScrollView>
+
+      <Modal visible={modalVisible} animationType="slide" transparent={false}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Log Meal {selectedMeal}</Text>
+            <Pressable onPress={() => setModalVisible(false)}>
+              <Text style={styles.closeButton}>?</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search food (e.g., chicken breast)"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onSubmitEditing={handleSearch}
+            />
+            <Pressable style={styles.searchButton} onPress={handleSearch}>
+              <Text style={styles.searchButtonText}>Search</Text>
+            </Pressable>
+          </View>
+
+          {searching && <ActivityIndicator size="large" color="#000" style={{ marginTop: 20 }} />}
+
+          <ScrollView style={styles.resultsContainer}>
+            {searchResults.map((food, index) => (
+              <Pressable
+                key={index}
+                style={styles.foodItem}
+                onPress={() => handleSelectFood(food)}
+              >
+                <Text style={styles.foodName}>{food.food_name}</Text>
+                <Text style={styles.foodServing}>{food.serving_unit}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
         </View>
-      )}
-    </ScrollView>
+      </Modal>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-  tabContainer: { flexDirection: 'row', marginBottom: 20 },
-  tab: { flex: 1, padding: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  activeTab: { borderBottomColor: '#000' },
-  tabText: { textAlign: 'center', fontWeight: '500' },
-  content: { minHeight: 200 },
-  subtitle: { fontSize: 18, fontWeight: '600', marginBottom: 15 },
-  mealInfo: { fontSize: 14, color: '#666', marginBottom: 20 },
-  macroCard: { backgroundColor: '#f8f8f8', padding: 20, borderRadius: 12, marginBottom: 20 },
-  macroRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
+  subtitle: { fontSize: 18, fontWeight: '600', marginTop: 20, marginBottom: 15 },
+  macroCard: { backgroundColor: '#f8f8f8', padding: 20, borderRadius: 12, marginBottom: 15 },
+  macroRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   macroLabel: { fontSize: 16, color: '#666' },
   macroValue: { fontSize: 18, fontWeight: '600' },
-  metaCard: { backgroundColor: '#e8e8e8', padding: 15, borderRadius: 8, marginBottom: 20 },
-  metaText: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 5 },
+  metaCard: { backgroundColor: '#e8e8e8', padding: 12, borderRadius: 8, marginBottom: 10 },
+  metaText: { fontSize: 13, color: '#666', textAlign: 'center', marginBottom: 3 },
   mealCard: { backgroundColor: '#fff', padding: 16, borderRadius: 12, marginBottom: 12, borderWidth: 1, borderColor: '#ddd' },
   mealTitle: { fontSize: 16, fontWeight: '600', marginBottom: 10 },
   mealMacros: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   mealMacroText: { fontSize: 14, color: '#666' },
   logButton: { backgroundColor: '#000', padding: 10, borderRadius: 8, alignItems: 'center' },
   logButtonText: { color: '#fff', fontSize: 14, fontWeight: '500' },
-  noData: { fontSize: 16, color: '#999', textAlign: 'center', marginTop: 40 }
+  modalContainer: { flex: 1, padding: 20, paddingTop: 60 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold' },
+  closeButton: { fontSize: 24, color: '#000' },
+  searchContainer: { flexDirection: 'row', marginBottom: 20 },
+  searchInput: { flex: 1, borderWidth: 1, borderColor: '#ddd', padding: 12, borderRadius: 8, marginRight: 10 },
+  searchButton: { backgroundColor: '#000', padding: 12, borderRadius: 8, justifyContent: 'center' },
+  searchButtonText: { color: '#fff', fontWeight: '500' },
+  resultsContainer: { flex: 1 },
+  foodItem: { padding: 15, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  foodName: { fontSize: 16, fontWeight: '500', marginBottom: 4 },
+  foodServing: { fontSize: 14, color: '#666' }
 });
