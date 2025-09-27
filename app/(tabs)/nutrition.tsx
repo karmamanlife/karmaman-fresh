@@ -66,7 +66,6 @@ export default function NutritionScreen() {
       const carbs = parseFloat(manualFood.carbs);
       const fats = parseFloat(manualFood.fats);
 
-      // Cache the food
       await supabase.from('food_cache').upsert({
         food_name: manualFood.name,
         calories,
@@ -77,7 +76,6 @@ export default function NutritionScreen() {
         serving_unit: 'serving'
       });
 
-      // Log the meal
       await supabase.from('user_meals_history').insert({
         user_id: user.id,
         meal_number: selectedMeal,
@@ -333,14 +331,15 @@ export default function NutritionScreen() {
 
               <ScrollView style={styles.resultsContainer}>
                 {searchResults.map((food, index) => (
-                  <Pressable
-                    key={index}
-                    style={styles.foodItem}
-                    onPress={() => handleSelectFood(food)}
-                  >
-                    <Text style={styles.foodName}>{food.food_name}</Text>
-                    <Text style={styles.foodServing}>{food.serving_unit}</Text>
-                  </Pressable>
+                  <View key={index} style={styles.foodItemContainer}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.foodName}>{food.food_name}</Text>
+                      <Text style={styles.foodServing}>{food.serving_unit}</Text>
+                    </View>
+                    <Pressable style={styles.addButton} onPress={() => handleSelectFood(food)}>
+                      <Text style={styles.addButtonText}>+</Text>
+                    </Pressable>
+                  </View>
                 ))}
               </ScrollView>
             </>
@@ -459,7 +458,9 @@ const styles = StyleSheet.create({
   cancelButton: { backgroundColor: '#666' },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '500' },
   resultsContainer: { flex: 1 },
-  foodItem: { padding: 15, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  foodItemContainer: { flexDirection: 'row', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: '#eee' },
   foodName: { fontSize: 16, fontWeight: '500', marginBottom: 4 },
-  foodServing: { fontSize: 14, color: '#666' }
+  foodServing: { fontSize: 14, color: '#666' },
+  addButton: { backgroundColor: '#000', width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  addButtonText: { color: '#fff', fontSize: 24, fontWeight: 'bold' }
 });

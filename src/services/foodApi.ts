@@ -1,19 +1,15 @@
-import Constants from 'expo-constants';
-
-const NUTRITIONIX_APP_ID = Constants.expoConfig?.extra?.NUTRITIONIX_APP_ID || process.env.EXPO_PUBLIC_NUTRITIONIX_APP_ID;
-const NUTRITIONIX_API_KEY = Constants.expoConfig?.extra?.NUTRITIONIX_API_KEY || process.env.EXPO_PUBLIC_NUTRITIONIX_API_KEY;
+const NUTRITIONIX_APP_ID = process.env.EXPO_PUBLIC_NUTRITIONIX_APP_ID;
+const NUTRITIONIX_API_KEY = process.env.EXPO_PUBLIC_NUTRITIONIX_API_KEY;
 
 export const searchFood = async (query: string) => {
   try {
     const url = `https://trackapi.nutritionix.com/v2/search/instant?query=${encodeURIComponent(query)}`;
     
-    console.log('Searching with:', { appId: NUTRITIONIX_APP_ID, hasKey: !!NUTRITIONIX_API_KEY });
-    
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'x-app-id': 'f2cb7916',
-        'x-app-key': '395b15ee8c8dac30239451264196e7a36',
+        'x-app-id': NUTRITIONIX_APP_ID || '',
+        'x-app-key': NUTRITIONIX_API_KEY || '',
       }
     });
     
@@ -35,8 +31,8 @@ export const getFoodNutrients = async (foodName: string) => {
     const response = await fetch('https://trackapi.nutritionix.com/v2/natural/nutrients', {
       method: 'POST',
       headers: {
-        'x-app-id': 'f2cb7916',
-        'x-app-key': '395b15ee8c8dac30239451264196e7a36',
+        'x-app-id': NUTRITIONIX_APP_ID || '',
+        'x-app-key': NUTRITIONIX_API_KEY || '',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ query: foodName })
