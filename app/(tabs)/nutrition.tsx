@@ -1,28 +1,72 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, TextInput, Modal, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  TextInput,
+  Modal,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { getSupabase } from '../../src/lib/supabase';
 import { searchFood, getFoodNutrients } from '../../src/services/foodApi';
 
+type UserNutritionProfile = {
+  daily_calories: number;
+  daily_protein: number;
+  daily_carbs: number;
+  daily_fats: number;
+};
+
+type Food = {
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  serving_size?: string;
+};
+
+type MealHistory = {
+  id: string;
+  meal_number: number;
+  meal_name: string;
+  foods: Food[];
+  total_calories: number;
+  total_protein: number;
+  total_carbs: number;
+  total_fats: number;
+  logged_at: string;
+};
+
+type SearchResult = {
+  food_name: string;
+  serving_unit: string;
+  serving_qty: number;
+};
+
 export default function NutritionScreen() {
-  const [macros, setMacros] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedMeal, setSelectedMeal] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [searching, setSearching] = useState(false);
+  const [profile, setProfile] = useState<UserNutritionProfile | null>(null);
+  const [mealHistory, setMealHistory] = useState<MealHistory[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const [manualEntry, setManualEntry] = useState(false);
-  const [manualFood, setManualFood] = useState({
-    name: '',
-    calories: '',
-    protein: '',
-    carbs: '',
-    fats: '',
-    serving: ''
-  });
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedMeal, setSelectedMeal] = useState<number>(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  
+  const [stagedFoods, setStagedFoods] = useState<Food[]>([]);
+  const [editingMealId, setEditingMealId] = useState<string | null>(null);
+  
+  const [manualName, setManualName] = useState('');
+  const [manualCalories, setManualCalories] = useState('');
+  const [manualProtein, setManualProtein] = useState('');
+  const [manualCarbs, setManualCarbs] = useState('');
+  const [manualFats, setManualFats] = useState('');
+  const [manualServing, setManualServing] = useState('');
 
   useEffect(() => {
     loadUserData();
@@ -31,146 +75,255 @@ export default function NutritionScreen() {
   const loadUserData = async () => {
     try {
       const supabase = getSupabase();
+      if (!supabase) {
+        setProfile({
+          daily_calories: 2000,
+          daily_protein: 150,
+          daily_carbs: 200,
+          daily_fats: 65
+        });
+        return;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) return;
+      if (!user) {
+        setProfile({
+          daily_calories: 2000,
+          daily_protein: 150,
+          daily_carbs: 200,
+          daily_fats: 65
+        });
+        return;
+      }
 
-      const [macrosResult, profileResult, historyResult] = await Promise.all([
-        supabase.from('user_calculations').select('*').eq('user_id', user.id).single(),
-        supabase.from('user_profiles').select('*').eq('user_id', user.id).single(),
-        supabase.from('user_meals_history').select('*').eq('user_id', user.id).order('logged_at', { ascending: false }).limit(10)
-      ]);
+      try {
+        const { data: profileData, error: profileError } = await supabase
+          .from('user_nutrition_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
 
-      if (macrosResult.data) setMacros(macrosResult.data);
-      if (profileResult.data) setProfile(profileResult.data);
-      if (historyResult.data) setHistory(historyResult.data);
+        if (profileError) {
+          console.error('Profile error:', profileError);
+          setProfile({
+            daily_calories: 2000,
+            daily_protein: 150,
+            daily_carbs: 200,
+            daily_fats: 65
+          });
+        } else if (profileData) {
+          setProfile(profileData);
+        }
+      } catch (profErr) {
+        console.error('Profile exception:', profErr);
+        setProfile({
+          daily_calories: 2000,
+          daily_protein: 150,
+          daily_carbs: 200,
+          daily_fats: 65
+        });
+      }
+
+      try {
+        const { data: historyData } = await supabase
+          .from('user_meals_history')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('logged_at', { ascending: false })
+          .limit(20);
+
+        if (historyData) {
+          console.log('Raw history data:', historyData);
+          setMealHistory(historyData as MealHistory[]);
+        }
+      } catch (histErr) {
+        console.error('History exception:', histErr);
+      }
     } catch (error) {
-      console.error('Load error:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error loading user data:', error);
+      setProfile({
+        daily_calories: 2000,
+        daily_protein: 150,
+        daily_carbs: 200,
+        daily_fats: 65
+      });
     }
   };
 
-  const handleManualEntry = async () => {
-    if (!manualFood.name || !manualFood.calories || !manualFood.protein || !manualFood.carbs || !manualFood.fats) {
-      Alert.alert('Error', 'Please fill in all fields');
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    
+    if (query.length < 2) {
+      setSearchResults([]);
       return;
     }
 
-    try {
-      const supabase = getSupabase();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      const calories = parseFloat(manualFood.calories);
-      const protein = parseFloat(manualFood.protein);
-      const carbs = parseFloat(manualFood.carbs);
-      const fats = parseFloat(manualFood.fats);
-
-      await supabase.from('food_cache').upsert({
-        food_name: manualFood.name,
-        calories,
-        protein,
-        carbs,
-        fats,
-        serving_size: manualFood.serving || '1',
-        serving_unit: 'serving'
-      });
-
-      await supabase.from('user_meals_history').insert({
-        user_id: user.id,
-        meal_number: selectedMeal,
-        meal_name: `Meal ${selectedMeal}`,
-        foods: [{
-          name: manualFood.name,
-          calories,
-          protein,
-          carbs,
-          fats,
-          quantity: manualFood.serving || '1'
-        }],
-        total_calories: calories,
-        total_protein: protein,
-        total_carbs: carbs,
-        total_fats: fats
-      });
-
-      setModalVisible(false);
-      setManualEntry(false);
-      setManualFood({ name: '', calories: '', protein: '', carbs: '', fats: '', serving: '' });
-      loadUserData();
-    } catch (error) {
-      console.error('Manual entry error:', error);
-      Alert.alert('Error', 'Failed to log food');
-    }
-  };
-
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-    
     setSearching(true);
     try {
-      const results = await searchFood(searchQuery);
+      const results = await searchFood(query);
       setSearchResults(results);
     } catch (error) {
       console.error('Search error:', error);
+      Alert.alert('Error', 'Failed to search for food');
     } finally {
       setSearching(false);
     }
   };
 
-  const handleSelectFood = async (food) => {
+  const handleSelectFood = async (foodName: string) => {
     try {
-      const nutrients = await getFoodNutrients(food.food_name);
+      const supabase = getSupabase();
+      if (!supabase) return;
+
+      const foodData = await getFoodNutrients(foodName);
       
-      if (nutrients) {
-        const supabase = getSupabase();
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        await supabase.from('food_cache').upsert({
-          food_name: nutrients.food_name,
-          brand: nutrients.brand_name,
-          calories: nutrients.nf_calories,
-          protein: nutrients.nf_protein,
-          carbs: nutrients.nf_total_carbohydrate,
-          fats: nutrients.nf_total_fat,
-          serving_size: nutrients.serving_qty,
-          serving_unit: nutrients.serving_unit
-        });
+      const food: Food = {
+        name: foodData.food_name,
+        calories: Math.round(foodData.nf_calories),
+        protein: Math.round(foodData.nf_protein),
+        carbs: Math.round(foodData.nf_total_carbohydrate),
+        fats: parseFloat(foodData.nf_total_fat.toFixed(2)),
+        serving_size: `${foodData.serving_qty} ${foodData.serving_unit}`,
+      };
 
-        await supabase.from('user_meals_history').insert({
-          user_id: user.id,
-          meal_number: selectedMeal,
-          meal_name: `Meal ${selectedMeal}`,
-          foods: [{
-            name: nutrients.food_name,
-            calories: nutrients.nf_calories,
-            protein: nutrients.nf_protein,
-            carbs: nutrients.nf_total_carbohydrate,
-            fats: nutrients.nf_total_fat,
-            quantity: nutrients.serving_qty
-          }],
-          total_calories: nutrients.nf_calories,
-          total_protein: nutrients.nf_protein,
-          total_carbs: nutrients.nf_total_carbohydrate,
-          total_fats: nutrients.nf_total_fat
-        });
+      await supabase.from('food_cache').upsert({
+        food_name: food.name,
+        calories: food.calories,
+        protein: food.protein,
+        carbs: food.carbs,
+        fats: food.fats,
+        serving_size: food.serving_size,
+      });
 
-        setModalVisible(false);
-        setSearchQuery('');
-        setSearchResults([]);
-        loadUserData();
-      }
+      setStagedFoods([...stagedFoods, food]);
+      setSearchQuery('');
+      setSearchResults([]);
+      Alert.alert('Added', `${food.name} added to meal`);
     } catch (error) {
-      console.error('Food select error:', error);
+      console.error('Error selecting food:', error);
+      Alert.alert('Error', 'Failed to add food');
     }
   };
 
-  const copyMeal = async (meal) => {
+  const handleRemoveStagedFood = (index: number) => {
+    const newStaged = stagedFoods.filter((_, i) => i !== index);
+    setStagedFoods(newStaged);
+  };
+
+  const handleFinishMeal = async () => {
+    if (stagedFoods.length === 0) {
+      Alert.alert('Error', 'Please add at least one food to the meal');
+      return;
+    }
+
     try {
       const supabase = getSupabase();
-      const { data: { user } } = await supabase.auth.getUser();
+      if (!supabase) return;
 
-      await supabase.from('user_meals_history').insert({
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const totalCalories = stagedFoods.reduce((sum, f) => sum + f.calories, 0);
+      const totalProtein = stagedFoods.reduce((sum, f) => sum + f.protein, 0);
+      const totalCarbs = stagedFoods.reduce((sum, f) => sum + f.carbs, 0);
+      const totalFats = stagedFoods.reduce((sum, f) => sum + f.fats, 0);
+
+      if (editingMealId) {
+        const { error: updateError } = await supabase
+          .from('user_meals_history')
+          .update({
+            foods: stagedFoods,
+            total_calories: totalCalories,
+            total_protein: totalProtein,
+            total_carbs: totalCarbs,
+            total_fats: totalFats,
+          })
+          .eq('id', editingMealId);
+
+        if (updateError) {
+          console.error('Update error:', updateError);
+          Alert.alert('Error', 'Failed to update meal');
+          return;
+        }
+      } else {
+        const { error: insertError } = await supabase
+          .from('user_meals_history')
+          .insert({
+            user_id: user.id,
+            meal_number: selectedMeal,
+            meal_name: `Meal ${selectedMeal}`,
+            foods: stagedFoods,
+            total_calories: totalCalories,
+            total_protein: totalProtein,
+            total_carbs: totalCarbs,
+            total_fats: totalFats,
+          });
+
+        if (insertError) {
+          console.error('Insert error:', insertError);
+          Alert.alert('Error', 'Failed to log meal');
+          return;
+        }
+      }
+
+      await loadUserData();
+      
+      setStagedFoods([]);
+      setEditingMealId(null);
+      setModalVisible(false);
+      setShowHistory(true);
+      
+      Alert.alert('Success', editingMealId ? 'Meal updated successfully!' : 'Meal logged successfully!');
+    } catch (error) {
+      console.error('Error finishing meal:', error);
+      Alert.alert('Error', 'Failed to save meal');
+    }
+  };
+
+  const handleManualEntry = async () => {
+    if (!manualName || !manualCalories || !manualProtein || !manualCarbs || !manualFats) {
+      Alert.alert('Error', 'Please fill in all required fields');
+      return;
+    }
+
+    const food: Food = {
+      name: manualName,
+      calories: parseInt(manualCalories),
+      protein: parseInt(manualProtein),
+      carbs: parseInt(manualCarbs),
+      fats: parseFloat(manualFats),
+      serving_size: manualServing || 'serving',
+    };
+
+    setStagedFoods([...stagedFoods, food]);
+
+    setManualName('');
+    setManualCalories('');
+    setManualProtein('');
+    setManualCarbs('');
+    setManualFats('');
+    setManualServing('');
+    setShowManualEntry(false);
+
+    Alert.alert('Added', `${food.name} added to meal`);
+  };
+
+  const handleEditMeal = (meal: MealHistory) => {
+    setStagedFoods(meal.foods || []);
+    setEditingMealId(meal.id);
+    setSelectedMeal(meal.meal_number);
+    setModalVisible(true);
+  };
+
+  const handleCopyMeal = async (meal: MealHistory) => {
+    try {
+      const supabase = getSupabase();
+      if (!supabase) return;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase.from('user_meals_history').insert({
         user_id: user.id,
         meal_number: meal.meal_number,
         meal_name: meal.meal_name,
@@ -178,289 +331,447 @@ export default function NutritionScreen() {
         total_calories: meal.total_calories,
         total_protein: meal.total_protein,
         total_carbs: meal.total_carbs,
-        total_fats: meal.total_fats
+        total_fats: meal.total_fats,
       });
 
-      loadUserData();
+      if (error) {
+        console.error('Copy error:', error);
+        Alert.alert('Error', 'Failed to copy meal');
+        return;
+      }
+
+      await loadUserData();
+      Alert.alert('Success', 'Meal copied successfully!');
     } catch (error) {
-      console.error('Copy meal error:', error);
+      console.error('Error copying meal:', error);
+      Alert.alert('Error', 'Failed to copy meal');
     }
   };
 
-  const openLogModal = (mealNumber) => {
-    setSelectedMeal(mealNumber);
+  const handleOpenModal = (mealNum: number) => {
+    setStagedFoods([]);
+    setEditingMealId(null);
+    setSelectedMeal(mealNum);
     setModalVisible(true);
-    setManualEntry(false);
   };
 
-  const renderMealSlots = () => {
-    if (!profile || !macros) return null;
-    
-    const mealsPerDay = profile.meals_per_day || 3;
-    const perMeal = {
-      calories: Math.round(macros.daily_calories / mealsPerDay),
-      protein: Math.round(macros.daily_protein / mealsPerDay),
-      carbs: Math.round(macros.daily_carbs / mealsPerDay),
-      fats: Math.round(macros.daily_fats / mealsPerDay)
-    };
-    
-    return Array.from({ length: mealsPerDay }, (_, i) => (
-      <View key={i} style={styles.mealCard}>
-        <Text style={styles.mealTitle}>Meal {i + 1}</Text>
-        <View style={styles.mealMacros}>
-          <Text style={styles.mealMacroText}>{perMeal.calories} cal</Text>
-          <Text style={styles.mealMacroText}>P: {perMeal.protein}g</Text>
-          <Text style={styles.mealMacroText}>C: {perMeal.carbs}g</Text>
-          <Text style={styles.mealMacroText}>F: {perMeal.fats}g</Text>
-        </View>
-        <Pressable style={styles.logButton} onPress={() => openLogModal(i + 1)}>
-          <Text style={styles.logButtonText}>Log Meal</Text>
-        </Pressable>
-      </View>
-    ));
+  const handleCloseModal = () => {
+    if (stagedFoods.length > 0) {
+      Alert.alert(
+        'Discard Changes?',
+        'You have unsaved foods in this meal. Are you sure you want to close?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Discard', 
+            style: 'destructive',
+            onPress: () => {
+              setStagedFoods([]);
+              setEditingMealId(null);
+              setModalVisible(false);
+              setShowManualEntry(false);
+            }
+          }
+        ]
+      );
+    } else {
+      setStagedFoods([]);
+      setEditingMealId(null);
+      setModalVisible(false);
+      setShowManualEntry(false);
+    }
   };
 
-  if (loading) {
+  if (!profile) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#000" />
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#10b981" />
       </View>
     );
   }
 
+  const mealsPerDay = 4;
+  const caloriesPerMeal = Math.round(profile.daily_calories / mealsPerDay);
+  const proteinPerMeal = Math.round(profile.daily_protein / mealsPerDay);
+  const carbsPerMeal = Math.round(profile.daily_carbs / mealsPerDay);
+  const fatsPerMeal = Math.round(profile.daily_fats / mealsPerDay);
+
+  const stagedTotals = {
+    calories: stagedFoods.reduce((sum, f) => sum + f.calories, 0),
+    protein: stagedFoods.reduce((sum, f) => sum + f.protein, 0),
+    carbs: stagedFoods.reduce((sum, f) => sum + f.carbs, 0),
+    fats: stagedFoods.reduce((sum, f) => sum + f.fats, 0),
+  };
+
   return (
-    <>
-      <ScrollView style={styles.container}>
-        <Text style={styles.title}>Nutrition</Text>
-        
-        {macros && (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Nutrition</Text>
+        <TouchableOpacity
+          style={styles.historyButton}
+          onPress={() => setShowHistory(!showHistory)}
+        >
+          <Text style={styles.historyButtonText}>
+            {showHistory ? 'Meal Slots' : 'History'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.dailyTargets}>
+        <Text style={styles.dailyTitle}>Daily Targets</Text>
+        <View style={styles.macrosRow}>
+          <View style={styles.macroItem}>
+            <Text style={styles.macroValue}>{profile.daily_calories}</Text>
+            <Text style={styles.macroLabel}>Calories</Text>
+          </View>
+          <View style={styles.macroItem}>
+            <Text style={styles.macroValue}>{profile.daily_protein}g</Text>
+            <Text style={styles.macroLabel}>Protein</Text>
+          </View>
+          <View style={styles.macroItem}>
+            <Text style={styles.macroValue}>{profile.daily_carbs}g</Text>
+            <Text style={styles.macroLabel}>Carbs</Text>
+          </View>
+          <View style={styles.macroItem}>
+            <Text style={styles.macroValue}>{profile.daily_fats}g</Text>
+            <Text style={styles.macroLabel}>Fats</Text>
+          </View>
+        </View>
+      </View>
+
+      <ScrollView style={styles.content}>
+        {!showHistory ? (
           <>
-            <Text style={styles.subtitle}>Daily Targets</Text>
-            <View style={styles.macroCard}>
-              <View style={styles.macroRow}>
-                <Text style={styles.macroLabel}>Calories</Text>
-                <Text style={styles.macroValue}>{Math.round(macros.daily_calories)}</Text>
+            {[1, 2, 3, 4].map((mealNum) => (
+              <View key={mealNum} style={styles.mealSlot}>
+                <View style={styles.mealHeader}>
+                  <Text style={styles.mealTitle}>Meal {mealNum}</Text>
+                  <TouchableOpacity
+                    style={styles.logButton}
+                    onPress={() => handleOpenModal(mealNum)}
+                  >
+                    <Text style={styles.logButtonText}>Log Meal</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.mealMacros}>
+                  <Text style={styles.mealMacroText}>{caloriesPerMeal} cal</Text>
+                  <Text style={styles.mealMacroText}>{proteinPerMeal}g P</Text>
+                  <Text style={styles.mealMacroText}>{carbsPerMeal}g C</Text>
+                  <Text style={styles.mealMacroText}>{fatsPerMeal}g F</Text>
+                </View>
               </View>
-              <View style={styles.macroRow}>
-                <Text style={styles.macroLabel}>Protein</Text>
-                <Text style={styles.macroValue}>{Math.round(macros.daily_protein)}g</Text>
-              </View>
-              <View style={styles.macroRow}>
-                <Text style={styles.macroLabel}>Carbs</Text>
-                <Text style={styles.macroValue}>{Math.round(macros.daily_carbs)}g</Text>
-              </View>
-              <View style={styles.macroRow}>
-                <Text style={styles.macroLabel}>Fats</Text>
-                <Text style={styles.macroValue}>{Math.round(macros.daily_fats)}g</Text>
-              </View>
-            </View>
-
-            <View style={styles.metaCard}>
-              <Text style={styles.metaText}>BMR: {Math.round(macros.bmr)} cal � TDEE: {Math.round(macros.tdee)} cal</Text>
-              {profile && <Text style={styles.metaText}>Meals per day: {profile.meals_per_day}</Text>}
-            </View>
-
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 15 }}>
-              <Text style={styles.subtitle}>Your Meals</Text>
-              <Pressable onPress={() => setShowHistory(!showHistory)} style={{ backgroundColor: '#000', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 }}>
-                <Text style={{ color: '#fff', fontSize: 14 }}>{showHistory ? 'Hide' : 'History'}</Text>
-              </Pressable>
-            </View>
-
-            {showHistory ? (
-              <View style={styles.historySection}>
-                <Text style={styles.historyTitle}>Recent Meals</Text>
-                {history.length === 0 ? (
-                  <Text style={styles.noHistory}>No meals logged yet</Text>
-                ) : (
-                  history.map((meal) => (
-                    <View key={meal.id} style={styles.historyCard}>
-                      <View style={styles.historyHeader}>
-                        <Text style={styles.historyMealName}>{meal.meal_name}</Text>
-                        <Pressable style={styles.copyButton} onPress={() => copyMeal(meal)}>
-                          <Text style={styles.copyButtonText}>Copy</Text>
-                        </Pressable>
-                      </View>
-                      <Text style={styles.historyDate}>{new Date(meal.logged_at).toLocaleDateString()}</Text>
-                      <View style={styles.historyMacros}>
-                        <Text style={styles.historyMacroText}>{Math.round(meal.total_calories)} cal</Text>
-                        <Text style={styles.historyMacroText}>P: {Math.round(meal.total_protein)}g</Text>
-                        <Text style={styles.historyMacroText}>C: {Math.round(meal.total_carbs)}g</Text>
-                        <Text style={styles.historyMacroText}>F: {Math.round(meal.total_fats)}g</Text>
-                      </View>
-                    </View>
-                  ))
-                )}
-              </View>
+            ))}
+          </>
+        ) : (
+          <>
+            <Text style={styles.historyTitle}>Recent Meals</Text>
+            {mealHistory.length === 0 ? (
+              <Text style={styles.emptyText}>No meals logged yet</Text>
             ) : (
-              renderMealSlots()
+              mealHistory.map((meal) => (
+                <View key={meal.id} style={styles.historyItem}>
+                  <View style={styles.historyHeader}>
+                    <View>
+                      <Text style={styles.historyMealName}>{meal.meal_name}</Text>
+                      <Text style={styles.historyDate}>
+                        {new Date(meal.logged_at).toLocaleDateString()} at{' '}
+                        {new Date(meal.logged_at).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </Text>
+                    </View>
+                    <View style={styles.actionButtons}>
+                      <TouchableOpacity
+                        style={styles.editButton}
+                        onPress={() => handleEditMeal(meal)}
+                      >
+                        <Text style={styles.editButtonText}>Edit</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.copyButton}
+                        onPress={() => handleCopyMeal(meal)}
+                      >
+                        <Text style={styles.copyButtonText}>Copy</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.foodsList}>
+                    {meal.foods && meal.foods.map((food, idx) => (
+                      <View key={idx} style={styles.foodItem}>
+                        <Text style={styles.foodName}>• {food.name}</Text>
+                        <Text style={styles.foodDetails}>
+                          {food.calories} cal | {food.protein}g P | {food.carbs}g C | {food.fats}g F
+                          {food.serving_size && ` | ${food.serving_size}`}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  <View style={styles.historyMacros}>
+                    <Text style={styles.historyMacroText}>
+                      Total: {meal.total_calories} cal
+                    </Text>
+                    <Text style={styles.historyMacroText}>
+                      {meal.total_protein}g P
+                    </Text>
+                    <Text style={styles.historyMacroText}>
+                      {meal.total_carbs}g C
+                    </Text>
+                    <Text style={styles.historyMacroText}>
+                      {meal.total_fats}g F
+                    </Text>
+                  </View>
+                </View>
+              ))
             )}
           </>
         )}
       </ScrollView>
 
-      <Modal visible={modalVisible} animationType="slide" transparent={false}>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Log Meal {selectedMeal}</Text>
-            <Pressable onPress={() => { setModalVisible(false); setManualEntry(false); }}>
-              <Text style={styles.closeButton}>?</Text>
-            </Pressable>
-          </View>
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleCloseModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {editingMealId ? 'Edit' : 'Log'} Meal {selectedMeal}
+              </Text>
+              <TouchableOpacity onPress={handleCloseModal}>
+                <Text style={styles.closeButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
 
-          {!manualEntry ? (
-            <>
-              <View style={styles.searchContainer}>
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search food (e.g., chicken breast)"
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  onSubmitEditing={handleSearch}
-                />
-                <Pressable style={styles.searchButton} onPress={handleSearch}>
-                  <Text style={styles.searchButtonText}>Search</Text>
-                </Pressable>
-              </View>
-
-              <Pressable style={styles.manualButton} onPress={() => setManualEntry(true)}>
-                <Text style={styles.manualButtonText}>Can't find food? Add manually</Text>
-              </Pressable>
-
-              {searching && <ActivityIndicator size="large" color="#000" style={{ marginTop: 20 }} />}
-
-              <ScrollView style={styles.resultsContainer}>
-                {searchResults.map((food, index) => (
-                  <View key={index} style={styles.foodItemContainer}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.foodName}>{food.food_name}</Text>
-                      <Text style={styles.foodServing}>{food.serving_unit}</Text>
+            {stagedFoods.length > 0 && (
+              <View style={styles.stagedSection}>
+                <Text style={styles.stagedTitle}>
+                  Foods in this meal ({stagedFoods.length})
+                </Text>
+                {stagedFoods.map((food, idx) => (
+                  <View key={idx} style={styles.stagedFood}>
+                    <View style={styles.stagedFoodInfo}>
+                      <Text style={styles.stagedFoodName}>{food.name}</Text>
+                      <Text style={styles.stagedFoodMacros}>
+                        {food.calories} cal | {food.protein}g P | {food.carbs}g C | {food.fats}g F
+                      </Text>
                     </View>
-                    <Pressable style={styles.addButton} onPress={() => handleSelectFood(food)}>
-                      <Text style={styles.addButtonText}>+</Text>
-                    </Pressable>
+                    <TouchableOpacity
+                      style={styles.removeButton}
+                      onPress={() => handleRemoveStagedFood(idx)}
+                    >
+                      <Text style={styles.removeButtonText}>✕</Text>
+                    </TouchableOpacity>
                   </View>
                 ))}
-              </ScrollView>
-            </>
-          ) : (
-            <ScrollView style={styles.manualForm}>
-              <Text style={styles.formLabel}>Food Name</Text>
-              <TextInput
-                style={styles.formInput}
-                placeholder="e.g., Grilled Chicken"
-                value={manualFood.name}
-                onChangeText={(text) => setManualFood({...manualFood, name: text})}
-              />
-
-              <Text style={styles.formLabel}>Calories</Text>
-              <TextInput
-                style={styles.formInput}
-                placeholder="e.g., 165"
-                keyboardType="numeric"
-                value={manualFood.calories}
-                onChangeText={(text) => setManualFood({...manualFood, calories: text})}
-              />
-
-              <Text style={styles.formLabel}>Protein (g)</Text>
-              <TextInput
-                style={styles.formInput}
-                placeholder="e.g., 31"
-                keyboardType="numeric"
-                value={manualFood.protein}
-                onChangeText={(text) => setManualFood({...manualFood, protein: text})}
-              />
-
-              <Text style={styles.formLabel}>Carbs (g)</Text>
-              <TextInput
-                style={styles.formInput}
-                placeholder="e.g., 0"
-                keyboardType="numeric"
-                value={manualFood.carbs}
-                onChangeText={(text) => setManualFood({...manualFood, carbs: text})}
-              />
-
-              <Text style={styles.formLabel}>Fats (g)</Text>
-              <TextInput
-                style={styles.formInput}
-                placeholder="e.g., 3.6"
-                keyboardType="numeric"
-                value={manualFood.fats}
-                onChangeText={(text) => setManualFood({...manualFood, fats: text})}
-              />
-
-              <Text style={styles.formLabel}>Serving Size (optional)</Text>
-              <TextInput
-                style={styles.formInput}
-                placeholder="e.g., 100g"
-                value={manualFood.serving}
-                onChangeText={(text) => setManualFood({...manualFood, serving: text})}
-              />
-
-              <View style={styles.buttonRow}>
-                <Pressable style={[styles.button, styles.cancelButton]} onPress={() => setManualEntry(false)}>
-                  <Text style={styles.buttonText}>Back to Search</Text>
-                </Pressable>
-                <Pressable style={styles.button} onPress={handleManualEntry}>
-                  <Text style={styles.buttonText}>Add Food</Text>
-                </Pressable>
+                <View style={styles.stagedTotals}>
+                  <Text style={styles.stagedTotalText}>
+                    Total: {stagedTotals.calories} cal | {stagedTotals.protein}g P | {stagedTotals.carbs}g C | {stagedTotals.fats}g F
+                  </Text>
+                </View>
               </View>
-            </ScrollView>
-          )}
+            )}
+
+            {!showManualEntry ? (
+              <>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search for food..."
+                  value={searchQuery}
+                  onChangeText={handleSearch}
+                  autoCapitalize="none"
+                />
+
+                {searching && <ActivityIndicator style={styles.loader} />}
+
+                <ScrollView style={styles.resultsContainer}>
+                  {searchResults.map((result, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.resultItem}
+                      onPress={() => handleSelectFood(result.food_name)}
+                    >
+                      <View style={styles.resultInfo}>
+                        <Text style={styles.resultName}>{result.food_name}</Text>
+                        <Text style={styles.resultServing}>
+                          {result.serving_qty} {result.serving_unit}
+                        </Text>
+                      </View>
+                      <Text style={styles.addButton}>+</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                <TouchableOpacity
+                  style={styles.manualButton}
+                  onPress={() => setShowManualEntry(true)}
+                >
+                  <Text style={styles.manualButtonText}>Can't find your food? Add manually</Text>
+                </TouchableOpacity>
+
+                {stagedFoods.length > 0 && (
+                  <TouchableOpacity
+                    style={styles.doneButton}
+                    onPress={handleFinishMeal}
+                  >
+                    <Text style={styles.doneButtonText}>
+                      {editingMealId ? 'Update Meal' : 'Finish Meal'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            ) : (
+              <ScrollView style={styles.manualForm}>
+                <Text style={styles.formLabel}>Food Name *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={manualName}
+                  onChangeText={setManualName}
+                  placeholder="e.g., Homemade Chicken Salad"
+                />
+
+                <Text style={styles.formLabel}>Calories *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={manualCalories}
+                  onChangeText={setManualCalories}
+                  keyboardType="numeric"
+                  placeholder="e.g., 350"
+                />
+
+                <Text style={styles.formLabel}>Protein (g) *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={manualProtein}
+                  onChangeText={setManualProtein}
+                  keyboardType="numeric"
+                  placeholder="e.g., 30"
+                />
+
+                <Text style={styles.formLabel}>Carbs (g) *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={manualCarbs}
+                  onChangeText={setManualCarbs}
+                  keyboardType="numeric"
+                  placeholder="e.g., 25"
+                />
+
+                <Text style={styles.formLabel}>Fats (g) *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={manualFats}
+                  onChangeText={setManualFats}
+                  keyboardType="decimal-pad"
+                  placeholder="e.g., 12.5"
+                />
+
+                <Text style={styles.formLabel}>Serving Size (optional)</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={manualServing}
+                  onChangeText={setManualServing}
+                  placeholder="e.g., 1 bowl"
+                />
+
+                <View style={styles.formButtons}>
+                  <TouchableOpacity
+                    style={[styles.formButton, styles.cancelButton]}
+                    onPress={() => setShowManualEntry(false)}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.formButton, styles.submitButton]}
+                    onPress={handleManualEntry}
+                  >
+                    <Text style={styles.submitButtonText}>Add to Meal</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            )}
+          </View>
         </View>
       </Modal>
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-  subtitle: { fontSize: 18, fontWeight: '600', marginBottom: 15 },
-  macroCard: { backgroundColor: '#f8f8f8', padding: 20, borderRadius: 12, marginBottom: 15 },
-  macroRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  macroLabel: { fontSize: 16, color: '#666' },
-  macroValue: { fontSize: 18, fontWeight: '600' },
-  metaCard: { backgroundColor: '#e8e8e8', padding: 12, borderRadius: 8, marginBottom: 10 },
-  metaText: { fontSize: 13, color: '#666', textAlign: 'center', marginBottom: 3 },
-  mealCard: { backgroundColor: '#fff', padding: 16, borderRadius: 12, marginBottom: 12, borderWidth: 1, borderColor: '#ddd' },
-  mealTitle: { fontSize: 16, fontWeight: '600', marginBottom: 10 },
-  mealMacros: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  mealMacroText: { fontSize: 14, color: '#666' },
-  logButton: { backgroundColor: '#000', padding: 10, borderRadius: 8, alignItems: 'center' },
-  logButtonText: { color: '#fff', fontSize: 14, fontWeight: '500' },
-  historySection: { marginTop: 10 },
-  historyTitle: { fontSize: 16, fontWeight: '600', marginBottom: 15 },
-  historyCard: { backgroundColor: '#fff', padding: 15, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: '#ddd' },
-  historyHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
-  historyMealName: { fontSize: 16, fontWeight: '600' },
-  historyDate: { fontSize: 12, color: '#999', marginBottom: 8 },
-  historyMacros: { flexDirection: 'row', justifyContent: 'space-around', paddingTop: 10, borderTopWidth: 1, borderTopColor: '#eee' },
-  historyMacroText: { fontSize: 13, color: '#666' },
-  copyButton: { backgroundColor: '#000', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6 },
-  copyButtonText: { color: '#fff', fontSize: 12, fontWeight: '500' },
-  noHistory: { fontSize: 14, color: '#999', textAlign: 'center', marginTop: 20 },
-  modalContainer: { flex: 1, padding: 20, paddingTop: 60 },
+  container: { flex: 1, backgroundColor: '#f9fafb' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
+  headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#111827' },
+  historyButton: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#10b981', borderRadius: 8 },
+  historyButtonText: { color: '#fff', fontWeight: '600' },
+  dailyTargets: { backgroundColor: '#fff', padding: 20, marginBottom: 10 },
+  dailyTitle: { fontSize: 18, fontWeight: '600', color: '#111827', marginBottom: 12 },
+  macrosRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  macroItem: { alignItems: 'center' },
+  macroValue: { fontSize: 20, fontWeight: 'bold', color: '#10b981' },
+  macroLabel: { fontSize: 12, color: '#6b7280', marginTop: 4 },
+  content: { flex: 1 },
+  mealSlot: { backgroundColor: '#fff', padding: 16, marginHorizontal: 20, marginBottom: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb' },
+  mealHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  mealTitle: { fontSize: 16, fontWeight: '600', color: '#111827' },
+  logButton: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#10b981', borderRadius: 6 },
+  logButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  mealMacros: { flexDirection: 'row', justifyContent: 'space-around' },
+  mealMacroText: { fontSize: 13, color: '#6b7280' },
+  historyTitle: { fontSize: 18, fontWeight: '600', color: '#111827', marginHorizontal: 20, marginVertical: 16 },
+  emptyText: { textAlign: 'center', color: '#6b7280', marginTop: 40, fontSize: 16 },
+  historyItem: { backgroundColor: '#fff', padding: 16, marginHorizontal: 20, marginBottom: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb' },
+  historyHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  historyMealName: { fontSize: 16, fontWeight: '600', color: '#111827' },
+  historyDate: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  actionButtons: { flexDirection: 'row', gap: 8 },
+  editButton: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#fef3c7', borderRadius: 6 },
+  editButtonText: { color: '#92400e', fontSize: 14, fontWeight: '600' },
+  copyButton: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#eff6ff', borderRadius: 6 },
+  copyButtonText: { color: '#2563eb', fontSize: 14, fontWeight: '600' },
+  foodsList: { marginBottom: 12, paddingLeft: 8 },
+  foodItem: { marginBottom: 8 },
+  foodName: { fontSize: 14, fontWeight: '500', color: '#374151', marginBottom: 2 },
+  foodDetails: { fontSize: 12, color: '#6b7280', marginLeft: 10 },
+  historyMacros: { flexDirection: 'row', justifyContent: 'space-around', paddingTop: 12, borderTopWidth: 1, borderTopColor: '#e5e7eb' },
+  historyMacroText: { fontSize: 12, color: '#6b7280' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, maxHeight: '90%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 20, fontWeight: 'bold' },
-  closeButton: { fontSize: 24, color: '#000' },
-  searchContainer: { flexDirection: 'row', marginBottom: 10 },
-  searchInput: { flex: 1, borderWidth: 1, borderColor: '#ddd', padding: 12, borderRadius: 8, marginRight: 10 },
-  searchButton: { backgroundColor: '#000', padding: 12, borderRadius: 8, justifyContent: 'center' },
-  searchButtonText: { color: '#fff', fontWeight: '500' },
-  manualButton: { backgroundColor: '#666', padding: 12, borderRadius: 8, alignItems: 'center', marginBottom: 20 },
-  manualButtonText: { color: '#fff', fontSize: 14, fontWeight: '500' },
-  manualForm: { flex: 1 },
-  formLabel: { fontSize: 16, fontWeight: '600', marginBottom: 8, marginTop: 12 },
-  formInput: { borderWidth: 1, borderColor: '#ddd', padding: 12, borderRadius: 8, fontSize: 16 },
-  buttonRow: { flexDirection: 'row', marginTop: 30, gap: 10 },
-  button: { flex: 1, backgroundColor: '#000', padding: 15, borderRadius: 8, alignItems: 'center' },
-  cancelButton: { backgroundColor: '#666' },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '500' },
+  modalTitle: { fontSize: 18, fontWeight: '600', color: '#111827' },
+  closeButton: { fontSize: 24, color: '#6b7280' },
+  stagedSection: { backgroundColor: '#f0fdf4', padding: 12, borderRadius: 8, marginBottom: 16 },
+  stagedTitle: { fontSize: 14, fontWeight: '600', color: '#065f46', marginBottom: 8 },
+  stagedFood: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: 10, borderRadius: 6, marginBottom: 6 },
+  stagedFoodInfo: { flex: 1 },
+  stagedFoodName: { fontSize: 14, fontWeight: '500', color: '#111827', marginBottom: 2 },
+  stagedFoodMacros: { fontSize: 11, color: '#6b7280' },
+  removeButton: { width: 28, height: 28, backgroundColor: '#fee2e2', borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
+  removeButtonText: { color: '#991b1b', fontSize: 16, fontWeight: 'bold' },
+  stagedTotals: { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#d1fae5' },
+  stagedTotalText: { fontSize: 12, fontWeight: '600', color: '#065f46' },
+  searchInput: { backgroundColor: '#f3f4f6', padding: 12, borderRadius: 8, fontSize: 16, marginBottom: 16 },
+  loader: { marginVertical: 20 },
   resultsContainer: { flex: 1 },
-  foodItemContainer: { flexDirection: 'row', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: '#eee' },
-  foodName: { fontSize: 16, fontWeight: '500', marginBottom: 4 },
-  foodServing: { fontSize: 14, color: '#666' },
-  addButton: { backgroundColor: '#000', width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  addButtonText: { color: '#fff', fontSize: 24, fontWeight: 'bold' }
+  resultItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
+  resultInfo: { flex: 1 },
+  resultName: { fontSize: 15, fontWeight: '500', color: '#111827' },
+  resultServing: { fontSize: 13, color: '#6b7280', marginTop: 2 },
+  addButton: { fontSize: 28, color: '#10b981', fontWeight: 'bold', marginLeft: 12 },
+  manualButton: { marginTop: 12, paddingVertical: 12, alignItems: 'center' },
+  manualButtonText: { color: '#2563eb', fontSize: 14, fontWeight: '500' },
+  doneButton: { backgroundColor: '#10b981', padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 16 },
+  doneButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  manualForm: { flex: 1 },
+  formLabel: { fontSize: 14, fontWeight: '500', color: '#374151', marginBottom: 6, marginTop: 12 },
+  formInput: { backgroundColor: '#f3f4f6', padding: 12, borderRadius: 8, fontSize: 16 },
+  formButtons: { flexDirection: 'row', gap: 12, marginTop: 20 },
+  formButton: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
+  cancelButton: { backgroundColor: '#f3f4f6' },
+  cancelButtonText: { color: '#374151', fontWeight: '600' },
+  submitButton: { backgroundColor: '#10b981' },
+  submitButtonText: { color: '#fff', fontWeight: '600' },
 });
