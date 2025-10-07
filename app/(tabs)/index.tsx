@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
 import { getSupabase } from '../../src/lib/supabase';
+import Svg, { Circle } from 'react-native-svg';
 
 type UserNutritionProfile = {
   daily_calories: number;
@@ -168,19 +169,59 @@ export default function HomeScreen() {
           action={<Pressable onPress={() => router.push('/nutrition')}><Text style={styles.link}>Details →</Text></Pressable>}
         />
         <CardContent>
-          <View style={styles.calorieRing}>
-            <View style={[styles.ring, isOverCalories && styles.ringOver]}>
-              <View style={styles.ringInner}>
-                <Text style={[styles.ringValue, isOverCalories && styles.overTarget]}>
-                  {isOverCalories ? '+' : ''}{Math.abs(remaining.calories).toLocaleString()}
-                </Text>
-                <Text style={styles.ringLabel}>{isOverCalories ? 'cal over' : 'cal left'}</Text>
+          <View style={styles.nutritionContainer}>
+            <View style={styles.ringsContainer}>
+              <View style={styles.calorieRing}>
+                <View style={styles.calorieRingInner}>
+                  <Text style={[styles.calorieValue, isOverCalories && styles.overTarget]}>
+                    {isOverCalories ? '+' : ''}{Math.abs(remaining.calories).toLocaleString()}
+                  </Text>
+                  <Text style={styles.calorieLabel}>{isOverCalories ? 'over' : 'left'}</Text>
+                </View>
               </View>
+              
+              <MacroRing 
+                percentage={(consumed.protein / profile.daily_protein) * 100}
+                color="#3F6B5C"
+                size={160}
+                strokeWidth={8}
+                position="protein"
+              />
+              <MacroRing 
+                percentage={(consumed.carbs / profile.daily_carbs) * 100}
+                color="#A3D9A1"
+                size={180}
+                strokeWidth={8}
+                position="carbs"
+              />
+              <MacroRing 
+                percentage={(consumed.fats / profile.daily_fats) * 100}
+                color="#D28A41"
+                size={200}
+                strokeWidth={8}
+                position="fats"
+              />
             </View>
-            <View style={styles.macroBars}>
-              <MacroBar label="Protein" current={Math.round(consumed.protein)} target={profile.daily_protein} color="#3F6B5C" />
-              <MacroBar label="Carbs" current={Math.round(consumed.carbs)} target={profile.daily_carbs} color="#A3D9A1" />
-              <MacroBar label="Fat" current={Math.round(consumed.fats)} target={profile.daily_fats} color="#D28A41" />
+
+            <View style={styles.macroBreakdown}>
+              <MacroBreakdownItem 
+                color="#3F6B5C"
+                label="Protein"
+                current={Math.round(consumed.protein)}
+                target={profile.daily_protein}
+              />
+              <MacroBreakdownItem 
+                color="#A3D9A1"
+                label="Carbs"
+                current={Math.round(consumed.carbs)}
+                target={profile.daily_carbs}
+              />
+              <MacroBreakdownItem 
+                color="#D28A41"
+                label="Fat"
+                current={Math.round(consumed.fats)}
+                target={profile.daily_fats}
+              />
             </View>
           </View>
         </CardContent>
@@ -240,6 +281,68 @@ export default function HomeScreen() {
   );
 }
 
+function MacroRing({ percentage, color, size, strokeWidth, position }: { 
+  percentage: number; 
+  color: string; 
+  size: number; 
+  strokeWidth: number;
+  position: 'protein' | 'carbs' | 'fats';
+}) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDashoffset = circumference - (Math.min(percentage, 100) / 100) * circumference;
+  
+  return (
+    <svg
+      width={size}
+      height={size}
+      style={{
+        position: 'absolute',
+        transform: [{ rotate: '-90deg' }],
+      }}
+    >
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        stroke="#DCD1C1"
+        strokeWidth={strokeWidth}
+        fill="none"
+      />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        stroke={percentage > 100 ? '#D40C19' : color}
+        strokeWidth={strokeWidth}
+        strokeDasharray={circumference}
+        strokeDashoffset={strokeDashoffset}
+        fill="none"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function MacroBreakdownItem({ color, label, current, target }: {
+  color: string;
+  label: string;
+  current: number;
+  target: number;
+}) {
+  const isOver = current > target;
+  
+  return (
+    <View style={styles.breakdownItem}>
+      <View style={[styles.colorDot, { backgroundColor: isOver ? '#D40C19' : color }]} />
+      <Text style={styles.breakdownLabel}>{label}:</Text>
+      <Text style={[styles.breakdownValue, isOver && styles.overTarget]}>
+        {current}g / {target}g
+      </Text>
+    </View>
+  );
+}
+
 function MacroBar({ label, current, target, color }: { label: string; current: number; target: number; color: string }) {
   const percentage = Math.min((current / target) * 100, 100);
   const isOver = current > target;
@@ -281,9 +384,75 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  calorieRing: {
+  nutritionContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 20,
+    gap: 24,
+  },
+  ringsContainer: {
+    width: 200,
+    height: 200,
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  calorieRing: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    zIndex: 10,
+  },
+  calorieRingInner: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  calorieValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#3F6B5C',
+  },
+  calorieLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  overTarget: {
+    color: '#D40C19',
+  },
+  macroBreakdown: {
+    flex: 1,
+    gap: 16,
+  },
+  breakdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  colorDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  breakdownLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+    minWidth: 55,
+  },
+  breakdownValue: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '600',
   },
   ring: {
     width: 120,

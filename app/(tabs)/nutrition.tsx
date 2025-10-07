@@ -100,6 +100,9 @@ export default function NutritionScreen() {
   const [manualCarbs, setManualCarbs] = useState('');
   const [manualFats, setManualFats] = useState('');
   const [manualServing, setManualServing] = useState('');
+  const [foodQuantity, setFoodQuantity] = useState('1');
+  const [selectedFoodForQuantity, setSelectedFoodForQuantity] = useState<any>(null);
+  const [showQuantityModal, setShowQuantityModal] = useState(false);
 
   useEffect(() => {
     loadUserData();
@@ -282,18 +285,30 @@ export default function NutritionScreen() {
 
   const handleSelectFood = async (foodName: string) => {
     try {
+      const foodData = await getFoodNutrients(foodName);
+      setSelectedFoodForQuantity(foodData);
+      setShowQuantityModal(true);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to fetch food data');
+    }
+  };
+
+  const handleConfirmQuantity = async () => {
+    try {
       const supabase = getSupabase();
       if (!supabase) return;
 
-      const foodData = await getFoodNutrients(foodName);
+      if (!selectedFoodForQuantity) return;
+
+      const quantity = parseFloat(foodQuantity) || 1;
      
       const food: Food = {
-        name: foodData.food_name,
-        calories: Math.round(foodData.nf_calories),
-        protein: Math.round(foodData.nf_protein),
-        carbs: Math.round(foodData.nf_total_carbohydrate),
-        fats: parseFloat(foodData.nf_total_fat.toFixed(2)),
-        serving_size: `${foodData.serving_qty} ${foodData.serving_unit}`,
+        name: selectedFoodForQuantity.food_name,
+        calories: Math.round(selectedFoodForQuantity.nf_calories * quantity),
+        protein: Math.round(selectedFoodForQuantity.nf_protein * quantity),
+        carbs: Math.round(selectedFoodForQuantity.nf_total_carbohydrate * quantity),
+        fats: parseFloat((selectedFoodForQuantity.nf_total_fat * quantity).toFixed(2)),
+        serving_size: `${selectedFoodForQuantity.serving_qty * quantity} ${selectedFoodForQuantity.serving_unit}`,
       };
 
       await supabase.from('food_cache').upsert({
@@ -306,8 +321,9 @@ export default function NutritionScreen() {
       });
 
       setStagedFoods(prev => [...prev, food]);
-      setSearchQuery('');
-      setSearchResults([]);
+      setShowQuantityModal(false);
+      setSelectedFoodForQuantity(null);
+      setFoodQuantity('1');
       setRefreshKey(prev => prev + 1);
       Alert.alert('Added', `${food.name} added to meal`);
     } catch (error) {
@@ -529,6 +545,7 @@ export default function NutritionScreen() {
     setStagedFoods([]);
     setEditingMealId(null);
     setSelectedMeal(mealNum);
+    setFoodQuantity('1');
     setModalVisible(true);
     setRefreshKey(prev => prev + 1);
   };
@@ -850,10 +867,10 @@ export default function NutritionScreen() {
 
                 {stagedFoods.length > 0 && !editingMealId && (
                   <TouchableOpacity
-                    style={styles.doneButton}
+                    style={styles.finishButton}
                     onPress={handleFinishMeal}
                   >
-                    <Text style={styles.doneButtonText}>Finish Meal</Text>
+                    <Text style={styles.finishButtonText}>Finish Meal</Text>
                   </TouchableOpacity>
                 )}
               </>
@@ -927,6 +944,64 @@ export default function NutritionScreen() {
                 </View>
               </ScrollView>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showQuantityModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowQuantityModal(false)}
+      >
+        <View style={styles.quantityModalOverlay}>
+          <View style={styles.quantityModalContent}>
+            <Text style={styles.quantityModalTitle}>
+              {selectedFoodForQuantity?.food_name}
+            </Text>
+            <Text style={styles.quantityModalSubtitle}>
+              {selectedFoodForQuantity?.serving_qty} {selectedFoodForQuantity?.serving_unit} per serving
+            </Text>
+            
+            <View style={styles.quantityInputContainer}>
+              <Text style={styles.quantityInputLabel}>How many servings?</Text>
+              <TextInput
+                style={styles.quantityModalInput}
+                value={foodQuantity}
+                onChangeText={setFoodQuantity}
+                keyboardType="decimal-pad"
+                placeholder="1"
+                autoFocus
+              />
+            </View>
+
+            <View style={styles.quantityPreview}>
+              <Text style={styles.quantityPreviewText}>
+                Total: {Math.round((selectedFoodForQuantity?.nf_calories || 0) * (parseFloat(foodQuantity) || 1))} cal | {' '}
+                {Math.round((selectedFoodForQuantity?.nf_protein || 0) * (parseFloat(foodQuantity) || 1))}g P | {' '}
+                {Math.round((selectedFoodForQuantity?.nf_total_carbohydrate || 0) * (parseFloat(foodQuantity) || 1))}g C | {' '}
+                {((selectedFoodForQuantity?.nf_total_fat || 0) * (parseFloat(foodQuantity) || 1)).toFixed(1)}g F
+              </Text>
+            </View>
+
+            <View style={styles.quantityModalButtons}>
+              <TouchableOpacity
+                style={[styles.quantityModalButton, styles.quantityCancelButton]}
+                onPress={() => {
+                  setShowQuantityModal(false);
+                  setSelectedFoodForQuantity(null);
+                  setFoodQuantity('1');
+                }}
+              >
+                <Text style={styles.quantityCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.quantityModalButton, styles.quantityDoneButton]}
+                onPress={handleConfirmQuantity}
+              >
+                <Text style={styles.quantityDoneButtonText}>Done</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -1027,8 +1102,23 @@ const styles = StyleSheet.create({
   addButton: { fontSize: 28, color: '#3F6B5C', fontWeight: 'bold', marginLeft: 12 },
   manualButton: { marginTop: 12, paddingVertical: 12, alignItems: 'center' },
   manualButtonText: { color: '#2563eb', fontSize: 14, fontWeight: '500' },
-  doneButton: { backgroundColor: '#3F6B5C', padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 16 },
-  doneButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  finishButton: { backgroundColor: '#3F6B5C', padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 16 },
+  finishButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  quantityModalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' },
+  quantityModalContent: { backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '85%', maxWidth: 400 },
+  quantityModalTitle: { fontSize: 18, fontWeight: '600', color: '#24534A', marginBottom: 4, textAlign: 'center' },
+  quantityModalSubtitle: { fontSize: 14, color: '#666', marginBottom: 20, textAlign: 'center' },
+  quantityInputContainer: { marginBottom: 20 },
+  quantityInputLabel: { fontSize: 14, fontWeight: '500', color: '#374151', marginBottom: 8 },
+  quantityModalInput: { backgroundColor: '#f3f4f6', padding: 16, borderRadius: 8, fontSize: 20, textAlign: 'center', fontWeight: '600' },
+  quantityPreview: { backgroundColor: '#f0fdf4', padding: 12, borderRadius: 8, marginBottom: 20 },
+  quantityPreviewText: { fontSize: 12, color: '#065f46', textAlign: 'center' },
+  quantityModalButtons: { flexDirection: 'row', gap: 12 },
+  quantityModalButton: { flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  quantityCancelButton: { backgroundColor: '#f3f4f6' },
+  quantityCancelButtonText: { color: '#374151', fontWeight: '600', fontSize: 16 },
+  quantityDoneButton: { backgroundColor: '#3F6B5C' },
+  quantityDoneButtonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
   manualForm: { flex: 1 },
   formLabel: { fontSize: 14, fontWeight: '500', color: '#374151', marginBottom: 6, marginTop: 12 },
   formInput: { backgroundColor: '#f3f4f6', padding: 12, borderRadius: 8, fontSize: 16 },
