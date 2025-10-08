@@ -87,13 +87,10 @@ export default function NutritionScreen() {
   const [searching, setSearching] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
- 
   const [stagedFoods, setStagedFoods] = useState<Food[]>([]);
   const [editingMealId, setEditingMealId] = useState<string | null>(null);
- 
   const [showCopyPicker, setShowCopyPicker] = useState(false);
   const [mealToCopy, setMealToCopy] = useState<MealHistory | null>(null);
- 
   const [manualName, setManualName] = useState('');
   const [manualCalories, setManualCalories] = useState('');
   const [manualProtein, setManualProtein] = useState('');
@@ -103,6 +100,7 @@ export default function NutritionScreen() {
   const [foodQuantity, setFoodQuantity] = useState('1');
   const [selectedFoodForQuantity, setSelectedFoodForQuantity] = useState<any>(null);
   const [showQuantityModal, setShowQuantityModal] = useState(false);
+  const [selectedServingOption, setSelectedServingOption] = useState<any>(null);
 
   useEffect(() => {
     loadUserData();
@@ -133,29 +131,20 @@ export default function NutritionScreen() {
   const calculateDailyTotals = (meals: MealHistory[]) => {
     const todayStart = getTodayStart();
     const todayEnd = getTodayEnd();
-   
     const todayMeals = meals.filter(meal => {
       const mealDate = new Date(meal.logged_at).toISOString();
       return mealDate >= todayStart && mealDate <= todayEnd;
     });
-
     const totals: DailyTotals = {};
-   
     todayMeals.forEach(meal => {
       if (!totals[meal.meal_number]) {
-        totals[meal.meal_number] = {
-          calories: 0,
-          protein: 0,
-          carbs: 0,
-          fats: 0,
-        };
+        totals[meal.meal_number] = { calories: 0, protein: 0, carbs: 0, fats: 0 };
       }
       totals[meal.meal_number].calories += meal.total_calories;
       totals[meal.meal_number].protein += meal.total_protein;
       totals[meal.meal_number].carbs += meal.total_carbs;
       totals[meal.meal_number].fats += meal.total_fats;
     });
-
     return totals;
   };
 
@@ -163,52 +152,28 @@ export default function NutritionScreen() {
     try {
       const supabase = getSupabase();
       if (!supabase) {
-        setProfile({
-          daily_calories: 2000,
-          daily_protein: 150,
-          daily_carbs: 200,
-          daily_fats: 65
-        });
+        setProfile({ daily_calories: 2000, daily_protein: 150, daily_carbs: 200, daily_fats: 65 });
         return;
       }
-
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        setProfile({
-          daily_calories: 2000,
-          daily_protein: 150,
-          daily_carbs: 200,
-          daily_fats: 65
-        });
+        setProfile({ daily_calories: 2000, daily_protein: 150, daily_carbs: 200, daily_fats: 65 });
         return;
       }
-
       try {
         const { data: profileData, error: profileError } = await supabase
           .from('user_nutrition_profiles')
           .select('*')
           .eq('user_id', user.id)
           .single();
-
         if (profileError) {
-          setProfile({
-            daily_calories: 2000,
-            daily_protein: 150,
-            daily_carbs: 200,
-            daily_fats: 65
-          });
+          setProfile({ daily_calories: 2000, daily_protein: 150, daily_carbs: 200, daily_fats: 65 });
         } else if (profileData) {
           setProfile(profileData);
         }
       } catch (profErr) {
-        setProfile({
-          daily_calories: 2000,
-          daily_protein: 150,
-          daily_carbs: 200,
-          daily_fats: 65
-        });
+        setProfile({ daily_calories: 2000, daily_protein: 150, daily_carbs: 200, daily_fats: 65 });
       }
-
       try {
         const { data: historyData } = await supabase
           .from('user_meals_history')
@@ -216,11 +181,9 @@ export default function NutritionScreen() {
           .eq('user_id', user.id)
           .order('logged_at', { ascending: false })
           .limit(50);
-
         if (historyData) {
           const allMeals = historyData as MealHistory[];
           setMealHistory(allMeals.slice(0, 14));
-         
           const totals = calculateDailyTotals(allMeals);
           setDailyTotals({...totals});
         } else {
@@ -230,12 +193,7 @@ export default function NutritionScreen() {
         setDailyTotals({});
       }
     } catch (error) {
-      setProfile({
-        daily_calories: 2000,
-        daily_protein: 150,
-        daily_carbs: 200,
-        daily_fats: 65
-      });
+      setProfile({ daily_calories: 2000, daily_protein: 150, daily_carbs: 200, daily_fats: 65 });
     }
   };
 
@@ -243,21 +201,15 @@ export default function NutritionScreen() {
     try {
       const supabase = getSupabase();
       if (!supabase) return;
-
       const { data: allMeals } = await supabase
         .from('user_meals_history')
         .select('id, logged_at')
         .eq('user_id', userId)
         .order('logged_at', { ascending: false });
-
       if (allMeals && allMeals.length > 14) {
         const mealsToDelete = allMeals.slice(14);
         const idsToDelete = mealsToDelete.map(m => m.id);
-       
-        await supabase
-          .from('user_meals_history')
-          .delete()
-          .in('id', idsToDelete);
+        await supabase.from('user_meals_history').delete().in('id', idsToDelete);
       }
     } catch (error) {
       console.error('Error enforcing history limit:', error);
@@ -266,12 +218,10 @@ export default function NutritionScreen() {
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
-   
     if (query.length < 2) {
       setSearchResults([]);
       return;
     }
-
     setSearching(true);
     try {
       const results = await searchFood(query);
@@ -287,6 +237,15 @@ export default function NutritionScreen() {
     try {
       const foodData = await getFoodNutrients(foodName);
       setSelectedFoodForQuantity(foodData);
+      if (foodData?.alt_measures && foodData.alt_measures.length > 0) {
+        setSelectedServingOption(foodData.alt_measures[0]);
+      } else {
+        setSelectedServingOption({
+          serving_weight: foodData?.serving_weight_grams || 100,
+          measure: foodData?.serving_unit || 'serving',
+          qty: foodData?.serving_qty || 1
+        });
+      }
       setShowQuantityModal(true);
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch food data');
@@ -297,20 +256,20 @@ export default function NutritionScreen() {
     try {
       const supabase = getSupabase();
       if (!supabase) return;
-
-      if (!selectedFoodForQuantity) return;
-
+      if (!selectedFoodForQuantity || !selectedServingOption) return;
       const quantity = parseFloat(foodQuantity) || 1;
-     
+      const baseWeight = selectedFoodForQuantity.serving_weight_grams;
+      const selectedWeight = selectedServingOption.serving_weight;
+      const weightMultiplier = selectedWeight / baseWeight;
+      const totalMultiplier = weightMultiplier * quantity;
       const food: Food = {
         name: selectedFoodForQuantity.food_name,
-        calories: Math.round(selectedFoodForQuantity.nf_calories * quantity),
-        protein: Math.round(selectedFoodForQuantity.nf_protein * quantity),
-        carbs: Math.round(selectedFoodForQuantity.nf_total_carbohydrate * quantity),
-        fats: parseFloat((selectedFoodForQuantity.nf_total_fat * quantity).toFixed(2)),
-        serving_size: `${selectedFoodForQuantity.serving_qty * quantity} ${selectedFoodForQuantity.serving_unit}`,
+        calories: Math.round(selectedFoodForQuantity.nf_calories * totalMultiplier),
+        protein: Math.round(selectedFoodForQuantity.nf_protein * totalMultiplier),
+        carbs: Math.round(selectedFoodForQuantity.nf_total_carbohydrate * totalMultiplier),
+        fats: parseFloat((selectedFoodForQuantity.nf_total_fat * totalMultiplier).toFixed(2)),
+        serving_size: `${quantity} ${selectedServingOption.measure}${quantity > 1 ? 's' : ''} (${Math.round(selectedWeight * quantity)}g)`,
       };
-
       await supabase.from('food_cache').upsert({
         food_name: food.name,
         calories: food.calories,
@@ -319,10 +278,10 @@ export default function NutritionScreen() {
         fats: food.fats,
         serving_size: food.serving_size,
       });
-
       setStagedFoods(prev => [...prev, food]);
       setShowQuantityModal(false);
       setSelectedFoodForQuantity(null);
+      setSelectedServingOption(null);
       setFoodQuantity('1');
       setRefreshKey(prev => prev + 1);
       Alert.alert('Added', `${food.name} added to meal`);
@@ -333,47 +292,34 @@ export default function NutritionScreen() {
 
   const handleRemoveStagedFood = async (index: number) => {
     const newStaged = stagedFoods.filter((_, i) => i !== index);
-    
     if (editingMealId) {
       try {
         const supabase = getSupabase();
         if (!supabase) return;
-
         if (newStaged.length === 0) {
-          // Deleting entire meal
           const { error: deleteError } = await supabase
             .from('user_meals_history')
             .delete()
             .eq('id', editingMealId);
-
           if (deleteError) {
             Alert.alert('Error', 'Failed to delete meal');
             return;
           }
-
-          // FORCE STATE UPDATE - remove from mealHistory immediately
           const updatedHistory = mealHistory.filter(m => m.id !== editingMealId);
           setMealHistory(updatedHistory);
-          
-          // Recalculate dailyTotals without this meal
           const newTotals = calculateDailyTotals(updatedHistory);
           setDailyTotals(newTotals);
-          
           setStagedFoods([]);
           setEditingMealId(null);
           setModalVisible(false);
           setRefreshKey(prev => prev + 1);
-          
           Alert.alert('Success', 'Meal deleted');
           return;
         }
-
-        // Updating meal with remaining foods
         const totalCalories = newStaged.reduce((sum, f) => sum + f.calories, 0);
         const totalProtein = newStaged.reduce((sum, f) => sum + f.protein, 0);
         const totalCarbs = newStaged.reduce((sum, f) => sum + f.carbs, 0);
         const totalFats = newStaged.reduce((sum, f) => sum + f.fats, 0);
-
         const { error: updateError } = await supabase
           .from('user_meals_history')
           .update({
@@ -384,24 +330,18 @@ export default function NutritionScreen() {
             total_fats: totalFats,
           })
           .eq('id', editingMealId);
-
         if (updateError) {
           Alert.alert('Error', 'Failed to update meal');
           return;
         }
-
-        // FORCE STATE UPDATE - update the meal in mealHistory immediately
         const updatedHistory = mealHistory.map(m => 
           m.id === editingMealId 
             ? { ...m, foods: newStaged, total_calories: totalCalories, total_protein: totalProtein, total_carbs: totalCarbs, total_fats: totalFats }
             : m
         );
         setMealHistory(updatedHistory);
-        
-        // Recalculate dailyTotals with updated meal
         const newTotals = calculateDailyTotals(updatedHistory);
         setDailyTotals(newTotals);
-        
         setStagedFoods(newStaged);
         setRefreshKey(prev => prev + 1);
       } catch (error) {
@@ -418,7 +358,6 @@ export default function NutritionScreen() {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
-
     const food: Food = {
       name: manualName,
       calories: parseInt(manualCalories),
@@ -427,10 +366,8 @@ export default function NutritionScreen() {
       fats: parseFloat(manualFats),
       serving_size: manualServing || 'serving',
     };
-
     setStagedFoods(prev => [...prev, food]);
     setRefreshKey(prev => prev + 1);
-
     setManualName('');
     setManualCalories('');
     setManualProtein('');
@@ -438,7 +375,6 @@ export default function NutritionScreen() {
     setManualFats('');
     setManualServing('');
     setShowManualEntry(false);
-
     Alert.alert('Added', `${food.name} added to meal`);
   };
 
@@ -447,21 +383,16 @@ export default function NutritionScreen() {
       Alert.alert('Error', 'Please add at least one food item');
       return;
     }
-
     try {
       const supabase = getSupabase();
       if (!supabase) return;
-
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
       const totalCalories = stagedFoods.reduce((sum, f) => sum + f.calories, 0);
       const totalProtein = stagedFoods.reduce((sum, f) => sum + f.protein, 0);
       const totalCarbs = stagedFoods.reduce((sum, f) => sum + f.carbs, 0);
       const totalFats = stagedFoods.reduce((sum, f) => sum + f.fats, 0);
-
       const mealName = getMealLabel(selectedMeal);
-
       const { error } = await supabase.from('user_meals_history').insert({
         user_id: user.id,
         meal_number: selectedMeal,
@@ -472,15 +403,12 @@ export default function NutritionScreen() {
         total_carbs: totalCarbs,
         total_fats: totalFats,
       });
-
       if (error) {
         Alert.alert('Error', 'Failed to log meal');
         return;
       }
-
       await enforceHistoryLimit(user.id);
       await loadUserData();
-
       setStagedFoods([]);
       setModalVisible(false);
       Alert.alert('Success', 'Meal logged successfully!');
@@ -504,16 +432,12 @@ export default function NutritionScreen() {
 
   const handleCopyToMeal = async (targetMealNumber: number) => {
     if (!mealToCopy) return;
-
     try {
       const supabase = getSupabase();
       if (!supabase) return;
-
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
       const targetMealName = getMealLabel(targetMealNumber);
-
       const { error } = await supabase.from('user_meals_history').insert({
         user_id: user.id,
         meal_number: targetMealNumber,
@@ -524,15 +448,12 @@ export default function NutritionScreen() {
         total_carbs: mealToCopy.total_carbs,
         total_fats: mealToCopy.total_fats,
       });
-
       if (error) {
         Alert.alert('Error', 'Failed to copy meal');
         return;
       }
-
       await enforceHistoryLimit(user.id);
       await loadUserData();
-     
       setShowCopyPicker(false);
       setMealToCopy(null);
       Alert.alert('Success', `Meal copied to ${targetMealName}!`);
@@ -590,21 +511,18 @@ export default function NutritionScreen() {
   const proteinPerMeal = Math.round(profile.daily_protein / mealsPerDay);
   const carbsPerMeal = Math.round(profile.daily_carbs / mealsPerDay);
   const fatsPerMeal = Math.round(profile.daily_fats / mealsPerDay);
-
   const stagedTotals = {
     calories: stagedFoods.reduce((sum, f) => sum + f.calories, 0),
     protein: stagedFoods.reduce((sum, f) => sum + f.protein, 0),
     carbs: stagedFoods.reduce((sum, f) => sum + f.carbs, 0),
     fats: stagedFoods.reduce((sum, f) => sum + f.fats, 0),
   };
-
   const totalConsumed = {
     calories: Object.values(dailyTotals).reduce((sum, meal) => sum + meal.calories, 0),
     protein: Object.values(dailyTotals).reduce((sum, meal) => sum + meal.protein, 0),
     carbs: Object.values(dailyTotals).reduce((sum, meal) => sum + meal.carbs, 0),
     fats: Object.values(dailyTotals).reduce((sum, meal) => sum + meal.fats, 0),
   };
-
   const remaining = {
     calories: profile.daily_calories - totalConsumed.calories,
     protein: profile.daily_protein - totalConsumed.protein,
@@ -616,16 +534,10 @@ export default function NutritionScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Nutrition</Text>
-        <Pressable
-          style={styles.historyButton}
-          onPress={() => setShowHistory(!showHistory)}
-        >
-          <Text style={styles.historyButtonText}>
-            {showHistory ? 'Today' : 'History'}
-          </Text>
+        <Pressable style={styles.historyButton} onPress={() => setShowHistory(!showHistory)}>
+          <Text style={styles.historyButtonText}>{showHistory ? 'Today' : 'History'}</Text>
         </Pressable>
       </View>
-
       <Card variant="elevated" style={styles.targetsCard}>
         <CardHeader title="Daily Targets" />
         <CardContent>
@@ -647,7 +559,6 @@ export default function NutritionScreen() {
               <Text style={styles.macroLabel}>Target</Text>
             </View>
           </View>
-
           <View style={styles.remainingRow}>
             <View style={styles.remainingItem}>
               <Text style={[styles.remainingValue, remaining.calories < 0 && styles.overTarget]}>
@@ -676,7 +587,6 @@ export default function NutritionScreen() {
           </View>
         </CardContent>
       </Card>
-
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         {!showHistory ? (
           <>
@@ -688,28 +598,17 @@ export default function NutritionScreen() {
                     title={mealType.name}
                     icon={<Text style={styles.mealEmoji}>{mealType.emoji}</Text>}
                     action={
-                      <Pressable
-                        style={styles.logButton}
-                        onPress={() => handleOpenModal(mealType.number)}
-                      >
+                      <Pressable style={styles.logButton} onPress={() => handleOpenModal(mealType.number)}>
                         <Text style={styles.logButtonText}>Log</Text>
                       </Pressable>
                     }
                   />
                   <CardContent>
                     <View style={styles.mealMacros}>
-                      <Text style={styles.mealMacroText}>
-                        {logged.calories} / {caloriesPerMeal} cal
-                      </Text>
-                      <Text style={styles.mealMacroText}>
-                        {logged.protein}g / {proteinPerMeal}g P
-                      </Text>
-                      <Text style={styles.mealMacroText}>
-                        {logged.carbs}g / {carbsPerMeal}g C
-                      </Text>
-                      <Text style={styles.mealMacroText}>
-                        {logged.fats}g / {fatsPerMeal}g F
-                      </Text>
+                      <Text style={styles.mealMacroText}>{logged.calories} / {caloriesPerMeal} cal</Text>
+                      <Text style={styles.mealMacroText}>{logged.protein}g / {proteinPerMeal}g P</Text>
+                      <Text style={styles.mealMacroText}>{logged.carbs}g / {carbsPerMeal}g C</Text>
+                      <Text style={styles.mealMacroText}>{logged.fats}g / {fatsPerMeal}g F</Text>
                     </View>
                   </CardContent>
                 </Card>
@@ -733,16 +632,10 @@ export default function NutritionScreen() {
                     icon={<Text style={styles.mealEmoji}>{getMealEmoji(meal.meal_number)}</Text>}
                     action={
                       <View style={styles.actionButtons}>
-                        <Pressable
-                          style={styles.editButton}
-                          onPress={() => handleEditMeal(meal)}
-                        >
+                        <Pressable style={styles.editButton} onPress={() => handleEditMeal(meal)}>
                           <Text style={styles.editButtonText}>Edit</Text>
                         </Pressable>
-                        <Pressable
-                          style={styles.copyButton}
-                          onPress={() => handleCopyMealClick(meal)}
-                        >
+                        <Pressable style={styles.copyButton} onPress={() => handleCopyMealClick(meal)}>
                           <Text style={styles.copyButtonText}>Copy</Text>
                         </Pressable>
                       </View>
@@ -761,18 +654,10 @@ export default function NutritionScreen() {
                       ))}
                     </View>
                     <View style={styles.historyMacros}>
-                      <Text style={styles.historyMacroText}>
-                        Total: {meal.total_calories} cal
-                      </Text>
-                      <Text style={styles.historyMacroText}>
-                        {meal.total_protein}g P
-                      </Text>
-                      <Text style={styles.historyMacroText}>
-                        {meal.total_carbs}g C
-                      </Text>
-                      <Text style={styles.historyMacroText}>
-                        {meal.total_fats}g F
-                      </Text>
+                      <Text style={styles.historyMacroText}>Total: {meal.total_calories} cal</Text>
+                      <Text style={styles.historyMacroText}>{meal.total_protein}g P</Text>
+                      <Text style={styles.historyMacroText}>{meal.total_carbs}g C</Text>
+                      <Text style={styles.historyMacroText}>{meal.total_fats}g F</Text>
                     </View>
                   </CardContent>
                 </Card>
@@ -781,13 +666,7 @@ export default function NutritionScreen() {
           </>
         )}
       </ScrollView>
-
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={handleCloseModal}
-      >
+      <Modal visible={modalVisible} animationType="slide" transparent={true} onRequestClose={handleCloseModal}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -798,12 +677,9 @@ export default function NutritionScreen() {
                 <Text style={styles.closeButton}>✕</Text>
               </TouchableOpacity>
             </View>
-
             {stagedFoods.length > 0 && (
               <View style={styles.stagedSection} key={`staged-${refreshKey}`}>
-                <Text style={styles.stagedTitle}>
-                  Foods in this meal ({stagedFoods.length})
-                </Text>
+                <Text style={styles.stagedTitle}>Foods in this meal ({stagedFoods.length})</Text>
                 {stagedFoods.map((food, idx) => (
                   <View key={`${food.name}-${idx}-${refreshKey}`} style={styles.stagedFood}>
                     <View style={styles.stagedFoodInfo}>
@@ -812,10 +688,7 @@ export default function NutritionScreen() {
                         {food.calories} cal | {food.protein}g P | {food.carbs}g C | {food.fats}g F
                       </Text>
                     </View>
-                    <TouchableOpacity
-                      style={styles.removeButton}
-                      onPress={() => handleRemoveStagedFood(idx)}
-                    >
+                    <TouchableOpacity style={styles.removeButton} onPress={() => handleRemoveStagedFood(idx)}>
                       <Text style={styles.removeButtonText}>✕</Text>
                     </TouchableOpacity>
                   </View>
@@ -827,7 +700,6 @@ export default function NutritionScreen() {
                 </View>
               </View>
             )}
-
             {!showManualEntry ? (
               <>
                 <TextInput
@@ -837,108 +709,51 @@ export default function NutritionScreen() {
                   onChangeText={handleSearch}
                   autoCapitalize="none"
                 />
-
                 {searching && <ActivityIndicator style={styles.loader} />}
-
                 <ScrollView style={styles.resultsContainer}>
                   {searchResults.map((result, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      style={styles.resultItem}
-                      onPress={() => handleSelectFood(result.food_name)}
-                    >
+                    <TouchableOpacity key={index} style={styles.resultItem} onPress={() => handleSelectFood(result.food_name)}>
                       <View style={styles.resultInfo}>
                         <Text style={styles.resultName}>{result.food_name}</Text>
-                        <Text style={styles.resultServing}>
-                          {result.serving_qty} {result.serving_unit}
-                        </Text>
+                        <Text style={styles.resultServing}>{result.serving_qty} {result.serving_unit}</Text>
                       </View>
                       <Text style={styles.addButton}>+</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
-
-                <TouchableOpacity
-                  style={styles.manualButton}
-                  onPress={() => setShowManualEntry(true)}
-                >
+                <TouchableOpacity style={styles.manualButton} onPress={() => setShowManualEntry(true)}>
                   <Text style={styles.manualButtonText}>Can't find your food? Add manually</Text>
                 </TouchableOpacity>
-
-                {stagedFoods.length > 0 && !editingMealId && (
+                {stagedFoods.length > 0 && (
                   <TouchableOpacity
                     style={styles.finishButton}
-                    onPress={handleFinishMeal}
+                    onPress={editingMealId ? () => setModalVisible(false) : handleFinishMeal}
                   >
-                    <Text style={styles.finishButtonText}>Finish Meal</Text>
+                    <Text style={styles.finishButtonText}>
+                      {editingMealId ? 'Done Editing' : 'Finish Meal'}
+                    </Text>
                   </TouchableOpacity>
                 )}
               </>
             ) : (
               <ScrollView style={styles.manualForm}>
                 <Text style={styles.formLabel}>Food Name *</Text>
-                <TextInput
-                  style={styles.formInput}
-                  value={manualName}
-                  onChangeText={setManualName}
-                  placeholder="e.g., Homemade Chicken Salad"
-                />
-
+                <TextInput style={styles.formInput} value={manualName} onChangeText={setManualName} placeholder="e.g., Homemade Chicken Salad" />
                 <Text style={styles.formLabel}>Calories *</Text>
-                <TextInput
-                  style={styles.formInput}
-                  value={manualCalories}
-                  onChangeText={setManualCalories}
-                  keyboardType="numeric"
-                  placeholder="e.g., 350"
-                />
-
+                <TextInput style={styles.formInput} value={manualCalories} onChangeText={setManualCalories} keyboardType="numeric" placeholder="e.g., 350" />
                 <Text style={styles.formLabel}>Protein (g) *</Text>
-                <TextInput
-                  style={styles.formInput}
-                  value={manualProtein}
-                  onChangeText={setManualProtein}
-                  keyboardType="numeric"
-                  placeholder="e.g., 30"
-                />
-
+                <TextInput style={styles.formInput} value={manualProtein} onChangeText={setManualProtein} keyboardType="numeric" placeholder="e.g., 30" />
                 <Text style={styles.formLabel}>Carbs (g) *</Text>
-                <TextInput
-                  style={styles.formInput}
-                  value={manualCarbs}
-                  onChangeText={setManualCarbs}
-                  keyboardType="numeric"
-                  placeholder="e.g., 25"
-                />
-
+                <TextInput style={styles.formInput} value={manualCarbs} onChangeText={setManualCarbs} keyboardType="numeric" placeholder="e.g., 25" />
                 <Text style={styles.formLabel}>Fats (g) *</Text>
-                <TextInput
-                  style={styles.formInput}
-                  value={manualFats}
-                  onChangeText={setManualFats}
-                  keyboardType="decimal-pad"
-                  placeholder="e.g., 12.5"
-                />
-
+                <TextInput style={styles.formInput} value={manualFats} onChangeText={setManualFats} keyboardType="decimal-pad" placeholder="e.g., 12.5" />
                 <Text style={styles.formLabel}>Serving Size (optional)</Text>
-                <TextInput
-                  style={styles.formInput}
-                  value={manualServing}
-                  onChangeText={setManualServing}
-                  placeholder="e.g., 1 bowl"
-                />
-
+                <TextInput style={styles.formInput} value={manualServing} onChangeText={setManualServing} placeholder="e.g., 1 bowl" />
                 <View style={styles.formButtons}>
-                  <TouchableOpacity
-                    style={[styles.formButton, styles.cancelButton]}
-                    onPress={() => setShowManualEntry(false)}
-                  >
+                  <TouchableOpacity style={[styles.formButton, styles.cancelButton]} onPress={() => setShowManualEntry(false)}>
                     <Text style={styles.cancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.formButton, styles.submitButton]}
-                    onPress={handleManualEntry}
-                  >
+                  <TouchableOpacity style={[styles.formButton, styles.submitButton]} onPress={handleManualEntry}>
                     <Text style={styles.submitButtonText}>Add to Meal</Text>
                   </TouchableOpacity>
                 </View>
@@ -947,24 +762,43 @@ export default function NutritionScreen() {
           </View>
         </View>
       </Modal>
-
-      <Modal
-        visible={showQuantityModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowQuantityModal(false)}
-      >
+      <Modal visible={showQuantityModal} animationType="slide" transparent={true} onRequestClose={() => setShowQuantityModal(false)}>
         <View style={styles.quantityModalOverlay}>
           <View style={styles.quantityModalContent}>
-            <Text style={styles.quantityModalTitle}>
-              {selectedFoodForQuantity?.food_name}
-            </Text>
-            <Text style={styles.quantityModalSubtitle}>
-              {selectedFoodForQuantity?.serving_qty} {selectedFoodForQuantity?.serving_unit} per serving
-            </Text>
-            
+            <Text style={styles.quantityModalTitle}>{selectedFoodForQuantity?.food_name}</Text>
+            <View style={styles.servingOptionsContainer}>
+              <Text style={styles.servingOptionsLabel}>Serving Size:</Text>
+              <View style={styles.servingScrollWrapper}>
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={true}
+                  persistentScrollbar={true}
+                  style={styles.servingOptions}
+                  contentContainerStyle={styles.servingOptionsContent}
+                >
+                  {selectedFoodForQuantity?.alt_measures?.map((option: any, idx: number) => (
+                    <Pressable
+                      key={idx}
+                      style={[
+                        styles.servingOption,
+                        selectedServingOption?.measure === option.measure && styles.servingOptionSelected
+                      ]}
+                      onPress={() => setSelectedServingOption(option)}
+                    >
+                      <Text style={[
+                        styles.servingOptionText,
+                        selectedServingOption?.measure === option.measure && styles.servingOptionTextSelected
+                      ]}>
+                        {option.qty} {option.measure}
+                      </Text>
+                      <Text style={styles.servingOptionWeight}>({Math.round(option.serving_weight)}g)</Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
             <View style={styles.quantityInputContainer}>
-              <Text style={styles.quantityInputLabel}>How many servings?</Text>
+              <Text style={styles.quantityInputLabel}>How many?</Text>
               <TextInput
                 style={styles.quantityModalInput}
                 value={foodQuantity}
@@ -974,65 +808,45 @@ export default function NutritionScreen() {
                 autoFocus
               />
             </View>
-
-            <View style={styles.quantityPreview}>
-              <Text style={styles.quantityPreviewText}>
-                Total: {Math.round((selectedFoodForQuantity?.nf_calories || 0) * (parseFloat(foodQuantity) || 1))} cal | {' '}
-                {Math.round((selectedFoodForQuantity?.nf_protein || 0) * (parseFloat(foodQuantity) || 1))}g P | {' '}
-                {Math.round((selectedFoodForQuantity?.nf_total_carbohydrate || 0) * (parseFloat(foodQuantity) || 1))}g C | {' '}
-                {((selectedFoodForQuantity?.nf_total_fat || 0) * (parseFloat(foodQuantity) || 1)).toFixed(1)}g F
-              </Text>
-            </View>
-
+            {selectedServingOption && (
+              <View style={styles.quantityPreview}>
+                <Text style={styles.quantityPreviewText}>
+                  Total: {Math.round((selectedFoodForQuantity?.nf_calories || 0) * (parseFloat(foodQuantity) || 1) * (selectedServingOption.serving_weight / selectedFoodForQuantity.serving_weight_grams))} cal | {' '}
+                  {Math.round((selectedFoodForQuantity?.nf_protein || 0) * (parseFloat(foodQuantity) || 1) * (selectedServingOption.serving_weight / selectedFoodForQuantity.serving_weight_grams))}g P | {' '}
+                  {Math.round((selectedFoodForQuantity?.nf_total_carbohydrate || 0) * (parseFloat(foodQuantity) || 1) * (selectedServingOption.serving_weight / selectedFoodForQuantity.serving_weight_grams))}g C | {' '}
+                  {((selectedFoodForQuantity?.nf_total_fat || 0) * (parseFloat(foodQuantity) || 1) * (selectedServingOption.serving_weight / selectedFoodForQuantity.serving_weight_grams)).toFixed(1)}g F
+                </Text>
+              </View>
+            )}
             <View style={styles.quantityModalButtons}>
               <TouchableOpacity
                 style={[styles.quantityModalButton, styles.quantityCancelButton]}
                 onPress={() => {
                   setShowQuantityModal(false);
                   setSelectedFoodForQuantity(null);
+                  setSelectedServingOption(null);
                   setFoodQuantity('1');
                 }}
               >
                 <Text style={styles.quantityCancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.quantityModalButton, styles.quantityDoneButton]}
-                onPress={handleConfirmQuantity}
-              >
+              <TouchableOpacity style={[styles.quantityModalButton, styles.quantityDoneButton]} onPress={handleConfirmQuantity}>
                 <Text style={styles.quantityDoneButtonText}>Done</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-
-      <Modal
-        visible={showCopyPicker}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setShowCopyPicker(false)}
-      >
+      <Modal visible={showCopyPicker} animationType="fade" transparent={true} onRequestClose={() => setShowCopyPicker(false)}>
         <View style={styles.pickerOverlay}>
           <View style={styles.pickerContent}>
             <Text style={styles.pickerTitle}>Copy to which meal?</Text>
             {MEAL_TYPES.map((mealType) => (
-              <TouchableOpacity
-                key={mealType.number}
-                style={styles.pickerOption}
-                onPress={() => handleCopyToMeal(mealType.number)}
-              >
-                <Text style={styles.pickerOptionText}>
-                  {mealType.emoji} {mealType.name}
-                </Text>
+              <TouchableOpacity key={mealType.number} style={styles.pickerOption} onPress={() => handleCopyToMeal(mealType.number)}>
+                <Text style={styles.pickerOptionText}>{mealType.emoji} {mealType.name}</Text>
               </TouchableOpacity>
             ))}
-            <TouchableOpacity
-              style={styles.pickerCancel}
-              onPress={() => {
-                setShowCopyPicker(false);
-                setMealToCopy(null);
-              }}
-            >
+            <TouchableOpacity style={styles.pickerCancel} onPress={() => { setShowCopyPicker(false); setMealToCopy(null); }}>
               <Text style={styles.pickerCancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -1105,9 +919,18 @@ const styles = StyleSheet.create({
   finishButton: { backgroundColor: '#3F6B5C', padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 16 },
   finishButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   quantityModalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' },
-  quantityModalContent: { backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '85%', maxWidth: 400 },
-  quantityModalTitle: { fontSize: 18, fontWeight: '600', color: '#24534A', marginBottom: 4, textAlign: 'center' },
-  quantityModalSubtitle: { fontSize: 14, color: '#666', marginBottom: 20, textAlign: 'center' },
+  quantityModalContent: { backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '90%', maxWidth: 400 },
+  quantityModalTitle: { fontSize: 18, fontWeight: '600', color: '#24534A', marginBottom: 16, textAlign: 'center' },
+  servingOptionsContainer: { marginBottom: 20 },
+  servingOptionsLabel: { fontSize: 14, fontWeight: '500', color: '#374151', marginBottom: 8 },
+  servingScrollWrapper: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, backgroundColor: '#f9fafb' },
+  servingOptions: { maxHeight: 100 },
+  servingOptionsContent: { paddingHorizontal: 12, paddingVertical: 8, gap: 8, flexDirection: 'row' },
+  servingOption: { backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, alignItems: 'center', borderWidth: 2, borderColor: '#e5e7eb', minWidth: 120 },
+  servingOptionSelected: { backgroundColor: '#f0fdf4', borderColor: '#3F6B5C' },
+  servingOptionText: { fontSize: 14, fontWeight: '500', color: '#374151' },
+  servingOptionTextSelected: { color: '#3F6B5C', fontWeight: '600' },
+  servingOptionWeight: { fontSize: 11, color: '#666', marginTop: 2 },
   quantityInputContainer: { marginBottom: 20 },
   quantityInputLabel: { fontSize: 14, fontWeight: '500', color: '#374151', marginBottom: 8 },
   quantityModalInput: { backgroundColor: '#f3f4f6', padding: 16, borderRadius: 8, fontSize: 20, textAlign: 'center', fontWeight: '600' },

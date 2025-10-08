@@ -159,7 +159,7 @@ export default function HomeScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <Text style={styles.greeting}>Welcome back! 👋</Text>
+        <Text style={styles.greeting}>Welcome back! 👊🏾</Text>
         <Text style={styles.date}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
       </View>
 
@@ -172,7 +172,9 @@ export default function HomeScreen() {
           <View style={styles.nutritionContainer}>
             <View style={styles.ringsContainer}>
               <View style={styles.calorieRing}>
-                <View style={styles.calorieRingInner}>
+                <View style={styles.
+                  
+                  Inner}>
                   <Text style={[styles.calorieValue, isOverCalories && styles.overTarget]}>
                     {isOverCalories ? '+' : ''}{Math.abs(remaining.calories).toLocaleString()}
                   </Text>
@@ -227,23 +229,19 @@ export default function HomeScreen() {
         </CardContent>
       </Card>
 
-      <Card variant="default" pressable onPress={() => router.push('/workouts')}>
-        <CardHeader 
-          title="Today's Workout"
-          icon={<Text style={styles.emoji}>💪</Text>}
-        />
-        <CardContent>
-          <View style={styles.workoutContent}>
-            <View style={styles.workoutIcon}>
-              <Text style={styles.emoji}>🏋️</Text>
-            </View>
-            <View style={styles.workoutDetails}>
-              <Text style={styles.workoutTitle}>Upper Body Strength</Text>
-              <Text style={styles.workoutMeta}>45 min • 6 exercises</Text>
-            </View>
-          </View>
-        </CardContent>
-      </Card>
+    <Card variant="default" pressable onPress={() => router.push('/workouts')} style={{ minHeight: 300}}>
+  <CardHeader
+    title="Today's Workout"
+  />
+  <CardContent>
+    <View style={styles.workoutContent}>
+      <View style={styles.workoutDetails}>
+        <Text style={styles.workoutTitle}>Upper Body Strength</Text>
+        <Text style={styles.workoutMeta}>45 min • 6 exercises</Text>
+      </View>
+    </View>
+  </CardContent>
+</Card>
 
       <Card variant="default">
         <CardHeader 
@@ -293,7 +291,7 @@ function MacroRing({ percentage, color, size, strokeWidth, position }: {
   const strokeDashoffset = circumference - (Math.min(percentage, 100) / 100) * circumference;
   
   return (
-    <svg
+    <Svg
       width={size}
       height={size}
       style={{
@@ -301,7 +299,7 @@ function MacroRing({ percentage, color, size, strokeWidth, position }: {
         transform: [{ rotate: '-90deg' }],
       }}
     >
-      <circle
+      <Circle
         cx={size / 2}
         cy={size / 2}
         r={radius}
@@ -309,7 +307,7 @@ function MacroRing({ percentage, color, size, strokeWidth, position }: {
         strokeWidth={strokeWidth}
         fill="none"
       />
-      <circle
+      <Circle
         cx={size / 2}
         cy={size / 2}
         r={radius}
@@ -320,7 +318,7 @@ function MacroRing({ percentage, color, size, strokeWidth, position }: {
         fill="none"
         strokeLinecap="round"
       />
-    </svg>
+    </Svg>
   );
 }
 
@@ -335,10 +333,12 @@ function MacroBreakdownItem({ color, label, current, target }: {
   return (
     <View style={styles.breakdownItem}>
       <View style={[styles.colorDot, { backgroundColor: isOver ? '#D40C19' : color }]} />
-      <Text style={styles.breakdownLabel}>{label}:</Text>
-      <Text style={[styles.breakdownValue, isOver && styles.overTarget]}>
-        {current}g / {target}g
-      </Text>
+      <View style={styles.breakdownTextContainer}>
+        <Text style={styles.breakdownLabel}>{label}</Text>
+        <Text style={[styles.breakdownValue, isOver && styles.overTarget]}>
+          {current}g / {target}g
+        </Text>
+      </View>
     </View>
   );
 }
@@ -388,7 +388,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 20,
-    gap: 24,
+    gap: 16,
+    justifyContent: 'space-between',
   },
   ringsContainer: {
     width: 200,
@@ -397,6 +398,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   calorieRing: {
     width: 120,
     height: 120,
@@ -405,7 +407,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'absolute',
-    shadowColor: '#000',
+    shadowColor: '#0calorieRing00',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -431,13 +433,27 @@ const styles = StyleSheet.create({
   },
   macroBreakdown: {
     flex: 1,
-    gap: 16,
+    gap: 12,
+    minWidth: 150,
   },
   breakdownItem: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 8,
+    marginBottom: 8,
   },
+  breakdownLabel: {
+  fontSize: 14,
+  fontWeight: '500',
+  color: '#374151',
+  
+},
+breakdownValue: {
+  fontSize: 12,  
+  color: '#666',
+  fontWeight: '600',
+  marginTop: 2,  
+},
   colorDot: {
     width: 12,
     height: 12,
@@ -450,19 +466,27 @@ const styles = StyleSheet.create({
     minWidth: 55,
   },
   breakdownValue: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#666',
     fontWeight: '600',
+    flexShrink: 1,
   },
-  ring: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#DCD1C1',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
+
+  calorieRing: {
+  width: 120,
+  height: 120,
+  borderRadius: 60,
+  backgroundColor: '#fff',
+  justifyContent: 'center',
+  alignItems: 'center',
+  position: 'absolute',
+  shadowColor: '#000',           
+  shadowOffset: { width: 0, height: 2 },  
+  shadowOpacity: 0.1,            
+  shadowRadius: 4,              
+  elevation: 3,                  
+  zIndex: 10,
+},
   ringOver: {
     backgroundColor: '#fee2e2',
   },
@@ -550,7 +574,7 @@ const styles = StyleSheet.create({
   streakValue: {
     fontSize: 36,
     fontWeight: '700',
-    color: '#3F6B5C',
+    color: '#D40C19',
     marginBottom: 8,
   },
   streakText: {
