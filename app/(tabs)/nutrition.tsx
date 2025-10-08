@@ -216,41 +216,50 @@ export default function NutritionScreen() {
     }
   };
 
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query);
-    if (query.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-    setSearching(true);
-    try {
-      const results = await searchFood(query);
-      setSearchResults(results);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to search for food');
-    } finally {
-      setSearching(false);
-    }
-  };
+const handleSearch = async (query: string) => {
+  setSearchQuery(query);
+ 
+  if (query.length < 2) {
+    setSearchResults([]);
+    return;
+  }
+  setSearching(true);
+  try {
+    const results = await searchFood(query);
+    console.log('🎯 UI got results:', results?.length, 'items');
+    console.log('🎯 Sample:', results?.[0]?.food_name);
+    setSearchResults(results);
+  } catch (error) {
+    console.error('🎯 Search error:', error);
+    Alert.alert('Error', 'Failed to search for food');
+  } finally {
+    setSearching(false);
+  }
+};
 
-  const handleSelectFood = async (foodName: string) => {
-    try {
-      const foodData = await getFoodNutrients(foodName);
-      setSelectedFoodForQuantity(foodData);
-      if (foodData?.alt_measures && foodData.alt_measures.length > 0) {
-        setSelectedServingOption(foodData.alt_measures[0]);
-      } else {
-        setSelectedServingOption({
-          serving_weight: foodData?.serving_weight_grams || 100,
-          measure: foodData?.serving_unit || 'serving',
-          qty: foodData?.serving_qty || 1
-        });
-      }
-      setShowQuantityModal(true);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to fetch food data');
+const handleSelectFood = async (foodName: string) => {
+  try {
+    console.log('🍔 handleSelectFood called for:', foodName);
+    const foodData = await getFoodNutrients(foodName);
+    console.log('🍔 Got food data:', foodData?.food_name);
+    setSelectedFoodForQuantity(foodData);
+    if (foodData?.alt_measures && foodData.alt_measures.length > 0) {
+      setSelectedServingOption(foodData.alt_measures[0]);
+    } else {
+      setSelectedServingOption({
+        serving_weight: foodData?.serving_weight_grams || 100,
+        measure: foodData?.serving_unit || 'serving',
+        qty: foodData?.serving_qty || 1
+      });
     }
-  };
+    console.log('🍔 About to open quantity modal');
+    setShowQuantityModal(true);
+    console.log('🍔 showQuantityModal set to true');
+  } catch (error) {
+    console.error('🍔 Error:', error);
+    Alert.alert('Error', 'Failed to fetch food data');
+  }
+};
 
   const handleConfirmQuantity = async () => {
     try {
@@ -665,18 +674,21 @@ export default function NutritionScreen() {
             )}
           </>
         )}
-      </ScrollView>
-      <Modal visible={modalVisible} animationType="slide" transparent={true} onRequestClose={handleCloseModal}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {editingMealId ? 'Edit' : 'Log'} {getMealLabel(selectedMeal)}
-              </Text>
-              <TouchableOpacity onPress={handleCloseModal}>
-                <Text style={styles.closeButton}>✕</Text>
-              </TouchableOpacity>
-            </View>
+    </ScrollView>
+<Modal visible={modalVisible} animationType="slide" transparent={true} onRequestClose={handleCloseModal}>
+  <View style={styles.modalOverlay}>
+    <ScrollView style={styles.modalContent} contentContainerStyle={{ paddingBottom: 40 }}>
+      <View style={styles.modalHeader}>
+        <Text style={styles.modalTitle}>
+          {editingMealId ? 'Edit' : 'Log'} {getMealLabel(selectedMeal)}
+        </Text>
+        <TouchableOpacity onPress={handleCloseModal}>
+          <Text style={styles.closeButton}>✕</Text>
+        </TouchableOpacity>
+      </View>
+      <Text style={{ color: 'white', fontSize: 24, padding: 20, backgroundColor: 'red', textAlign: 'center', fontWeight: 'bold' }}>
+        🔴 STAGED FOODS: {stagedFoods.length} 🔴
+      </Text>
             {stagedFoods.length > 0 && (
               <View style={styles.stagedSection} key={`staged-${refreshKey}`}>
                 <Text style={styles.stagedTitle}>Foods in this meal ({stagedFoods.length})</Text>
@@ -700,66 +712,70 @@ export default function NutritionScreen() {
                 </View>
               </View>
             )}
-            {!showManualEntry ? (
-              <>
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search for food..."
-                  value={searchQuery}
-                  onChangeText={handleSearch}
-                  autoCapitalize="none"
-                />
-                {searching && <ActivityIndicator style={styles.loader} />}
-                <ScrollView style={styles.resultsContainer}>
-                  {searchResults.map((result, index) => (
-                    <TouchableOpacity key={index} style={styles.resultItem} onPress={() => handleSelectFood(result.food_name)}>
-                      <View style={styles.resultInfo}>
-                        <Text style={styles.resultName}>{result.food_name}</Text>
-                        <Text style={styles.resultServing}>{result.serving_qty} {result.serving_unit}</Text>
-                      </View>
-                      <Text style={styles.addButton}>+</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-                <TouchableOpacity style={styles.manualButton} onPress={() => setShowManualEntry(true)}>
-                  <Text style={styles.manualButtonText}>Can't find your food? Add manually</Text>
-                </TouchableOpacity>
-                {stagedFoods.length > 0 && (
-                  <TouchableOpacity
-                    style={styles.finishButton}
-                    onPress={editingMealId ? () => setModalVisible(false) : handleFinishMeal}
-                  >
-                    <Text style={styles.finishButtonText}>
-                      {editingMealId ? 'Done Editing' : 'Finish Meal'}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </>
-            ) : (
-              <ScrollView style={styles.manualForm}>
-                <Text style={styles.formLabel}>Food Name *</Text>
-                <TextInput style={styles.formInput} value={manualName} onChangeText={setManualName} placeholder="e.g., Homemade Chicken Salad" />
-                <Text style={styles.formLabel}>Calories *</Text>
-                <TextInput style={styles.formInput} value={manualCalories} onChangeText={setManualCalories} keyboardType="numeric" placeholder="e.g., 350" />
-                <Text style={styles.formLabel}>Protein (g) *</Text>
-                <TextInput style={styles.formInput} value={manualProtein} onChangeText={setManualProtein} keyboardType="numeric" placeholder="e.g., 30" />
-                <Text style={styles.formLabel}>Carbs (g) *</Text>
-                <TextInput style={styles.formInput} value={manualCarbs} onChangeText={setManualCarbs} keyboardType="numeric" placeholder="e.g., 25" />
-                <Text style={styles.formLabel}>Fats (g) *</Text>
-                <TextInput style={styles.formInput} value={manualFats} onChangeText={setManualFats} keyboardType="decimal-pad" placeholder="e.g., 12.5" />
-                <Text style={styles.formLabel}>Serving Size (optional)</Text>
-                <TextInput style={styles.formInput} value={manualServing} onChangeText={setManualServing} placeholder="e.g., 1 bowl" />
-                <View style={styles.formButtons}>
-                  <TouchableOpacity style={[styles.formButton, styles.cancelButton]} onPress={() => setShowManualEntry(false)}>
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.formButton, styles.submitButton]} onPress={handleManualEntry}>
-                    <Text style={styles.submitButtonText}>Add to Meal</Text>
-                  </TouchableOpacity>
-                </View>
-              </ScrollView>
-            )}
+       {!showManualEntry ? (
+  <>
+    <TextInput
+      style={styles.searchInput}
+      placeholder="Search for food..."
+      value={searchQuery}
+      onChangeText={handleSearch}
+      autoCapitalize="none"
+    />
+    {searching && <ActivityIndicator style={styles.loader} />}
+    <ScrollView style={[styles.resultsContainer, { backgroundColor: 'yellow', minHeight: 200 }]}>
+      {searchResults.map((result, index) => (
+        <TouchableOpacity key={index} style={styles.resultItem} onPress={() => handleSelectFood(result.food_name)}>
+          <View style={styles.resultInfo}>
+            <Text style={styles.resultName}>{result.food_name}</Text>
+            <Text style={styles.resultServing}>{result.serving_qty} {result.serving_unit}</Text>
           </View>
+          <Text style={styles.addButton}>+</Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+    <TouchableOpacity style={styles.manualButton} onPress={() => setShowManualEntry(true)}>
+      <Text style={styles.manualButtonText}>Can't find your food? Add manually</Text>
+    </TouchableOpacity>
+  </>
+) : (
+  <ScrollView style={styles.manualForm}>
+    <Text style={styles.formLabel}>Food Name *</Text>
+    <TextInput style={styles.formInput} value={manualName} onChangeText={setManualName} placeholder="e.g., Homemade Chicken Salad" />
+    <Text style={styles.formLabel}>Calories *</Text>
+    <TextInput style={styles.formInput} value={manualCalories} onChangeText={setManualCalories} keyboardType="numeric" placeholder="e.g., 350" />
+    <Text style={styles.formLabel}>Protein (g) *</Text>
+    <TextInput style={styles.formInput} value={manualProtein} onChangeText={setManualProtein} keyboardType="numeric" placeholder="e.g., 30" />
+    <Text style={styles.formLabel}>Carbs (g) *</Text>
+    <TextInput style={styles.formInput} value={manualCarbs} onChangeText={setManualCarbs} keyboardType="numeric" placeholder="e.g., 25" />
+    <Text style={styles.formLabel}>Fats (g) *</Text>
+    <TextInput style={styles.formInput} value={manualFats} onChangeText={setManualFats} keyboardType="decimal-pad" placeholder="e.g., 12.5" />
+    <Text style={styles.formLabel}>Serving Size (optional)</Text>
+    <TextInput style={styles.formInput} value={manualServing} onChangeText={setManualServing} placeholder="e.g., 1 bowl" />
+    <View style={styles.formButtons}>
+      <TouchableOpacity style={[styles.formButton, styles.cancelButton]} onPress={() => setShowManualEntry(false)}>
+        <Text style={styles.cancelButtonText}>Cancel</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.formButton, styles.submitButton]} onPress={handleManualEntry}>
+        <Text style={styles.submitButtonText}>Add to Meal</Text>
+      </TouchableOpacity>
+    </View>
+  </ScrollView>
+)}
+<Text style={{ color: 'white', fontSize: 24, padding: 20, backgroundColor: 'blue', textAlign: 'center', fontWeight: 'bold' }}>
+  🔵 STAGED: {stagedFoods.length} 🔵
+</Text>
+{stagedFoods.length > 0 && (
+  <TouchableOpacity
+    style={[styles.doneButton, { backgroundColor: 'red', padding: 20, zIndex: 999, marginTop: 10 }]}
+    onPress={editingMealId ? () => setModalVisible(false) : handleFinishMeal}
+  >
+    <Text style={[styles.doneButtonText, { color: 'white', fontSize: 20, fontWeight: 'bold' }]}>
+      {editingMealId ? 'Done Editing' : 'Finish Meal'}
+    </Text>
+  </TouchableOpacity>
+)}
+            )}
+          </ScrollView>
         </View>
       </Modal>
       <Modal visible={showQuantityModal} animationType="slide" transparent={true} onRequestClose={() => setShowQuantityModal(false)}>
@@ -908,7 +924,7 @@ const styles = StyleSheet.create({
   stagedTotalText: { fontSize: 12, fontWeight: '600', color: '#065f46' },
   searchInput: { backgroundColor: '#f3f4f6', padding: 12, borderRadius: 8, fontSize: 16, marginBottom: 16 },
   loader: { marginVertical: 20 },
-  resultsContainer: { flex: 1 },
+  resultsContainer: { flex: 300},
   resultItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
   resultInfo: { flex: 1 },
   resultName: { fontSize: 15, fontWeight: '500', color: '#24534A' },

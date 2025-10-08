@@ -25,6 +25,10 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "NUTRITIONIX_APP_ID": "f2cb7916",
+      "NUTRITIONIX_API_KEY": "9a625870fa94"
     }
   }
 }
