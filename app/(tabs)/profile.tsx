@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Alert, TextInput } from 'react-native';
+import { useRouter } from 'expo-router';
 import { getSupabase } from '../../src/lib/supabase';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [goals, setGoals] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -19,7 +22,12 @@ export default function ProfileScreen() {
       const supabase = getSupabase();
       const { data: { user } } = await supabase.auth.getUser();
       
-      if (!user) return;
+      setUser(user);
+
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
       const [profileResult, goalsResult] = await Promise.all([
         supabase.from('user_profiles').select('*').eq('user_id', user.id).single(),
@@ -36,6 +44,19 @@ export default function ProfileScreen() {
       console.error('Load error:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      const supabase = getSupabase();
+      await supabase.auth.signOut();
+      setUser(null);
+      setProfile(null);
+      setGoals(null);
+      Alert.alert('Success', 'Signed out successfully');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to sign out');
     }
   };
 
@@ -76,6 +97,31 @@ export default function ProfileScreen() {
     );
   }
 
+  // LOGGED OUT STATE
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Profile</Text>
+        <View style={styles.loggedOutCard}>
+          <Text style={styles.loggedOutText}>You're not signed in</Text>
+          <Pressable 
+            style={styles.authButton} 
+            onPress={() => router.push('/auth/sign-in')}
+          >
+            <Text style={styles.authButtonText}>Sign In</Text>
+          </Pressable>
+          <Pressable 
+            style={[styles.authButton, styles.signUpButton]} 
+            onPress={() => router.push('/auth/sign-up')}
+          >
+            <Text style={styles.authButtonText}>Sign Up</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  // LOGGED IN STATE
   const goalLabels = {
     cut: 'Cut Fat & Get Jacked',
     maintain: 'Maintain',
@@ -85,6 +131,15 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Profile</Text>
+
+      {/* User Info Card */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Account</Text>
+        <Text style={styles.emailText}>{user.email}</Text>
+        <Pressable style={styles.signOutButton} onPress={handleSignOut}>
+          <Text style={styles.signOutButtonText}>Sign Out</Text>
+        </Pressable>
+      </View>
 
       {profile && (
         <>
@@ -180,8 +235,69 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
+  
+  // Logged out styles
+  loggedOutCard: { 
+    backgroundColor: '#f8f8f8', 
+    padding: 30, 
+    borderRadius: 12, 
+    alignItems: 'center',
+    marginTop: 40
+  },
+  loggedOutText: { 
+    fontSize: 18, 
+    color: '#666', 
+    marginBottom: 30,
+    textAlign: 'center'
+  },
+  authButton: { 
+    backgroundColor: '#000', 
+    padding: 15, 
+    borderRadius: 8, 
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 12
+  },
+  signUpButton: {
+    backgroundColor: '#666'
+  },
+  authButtonText: { 
+    color: '#fff', 
+    fontSize: 16, 
+    fontWeight: '600' 
+  },
+
+  // Logged in styles
+  card: { 
+    backgroundColor: '#f8f8f8', 
+    padding: 20, 
+    borderRadius: 12, 
+    marginBottom: 20 
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 10,
+    color: '#333'
+  },
+  emailText: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 15
+  },
+  signOutButton: {
+    backgroundColor: '#dc3545',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center'
+  },
+  signOutButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500'
+  },
+  
   subtitle: { fontSize: 18, fontWeight: '600', marginTop: 20, marginBottom: 15 },
-  card: { backgroundColor: '#f8f8f8', padding: 20, borderRadius: 12, marginBottom: 20 },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   label: { fontSize: 16, color: '#666' },
   value: { fontSize: 16, fontWeight: '600' },

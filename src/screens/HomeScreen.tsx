@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../../app';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import HeaderMenu from '../components/HeaderMenu';
 import StreakBanner from '../components/StreakBanner';

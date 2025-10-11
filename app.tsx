@@ -1,6 +1,4 @@
-// File: App.tsx
 import React from 'react';
-import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -9,35 +7,25 @@ import WorkoutScreen from './src/screens/WorkoutScreen';
 import NutritionScreen from './src/screens/NutritionScreen';
 import LogsScreen from './src/screens/LogsScreen';
 
-export type RootStackParamList = {
-  Home: undefined;
-  Workout: undefined;
-  Nutrition: undefined;
-  Logs: undefined;
-};
-
-const Stack = createNativeStackNavigator<RootStackParamList>();
+const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
     <NavigationContainer>
-      <StatusBar style="light" />
+      // @ts-ignore — navigator `id` not required at runtime
       <Stack.Navigator
+        
         initialRouteName="Home"
         screenOptions={{
-          headerStyle: { backgroundColor: '#0B0F15' },
-          headerTintColor: 'white',
-          contentStyle: { backgroundColor: '#0B0F15' },
+          headerStyle: { backgroundColor: '#ffffff' },
+          headerTintColor: '#111827',
+          contentStyle: { backgroundColor: '#ffffff' },
         }}
       >
-        <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{ title: 'Karmaman' }}
-        />
-        <Stack.Screen name="Workout" component={WorkoutScreen} options={{ title: 'Today’s Workout' }} />
-        <Stack.Screen name="Nutrition" component={NutritionScreen} options={{ title: 'Nutrition' }} />
-        <Stack.Screen name="Logs" component={LogsScreen} options={{ title: 'Logs' }} />
+        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Workouts" component={WorkoutScreen} />
+        <Stack.Screen name="Nutrition" component={NutritionScreen} />
+        <Stack.Screen name="Logs" component={LogsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

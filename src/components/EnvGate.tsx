@@ -10,7 +10,7 @@ export default function EnvGate({ children }: { children: React.ReactNode }) {
     let mounted = true;
     (async () => {
       const res = await supabaseConnectivityCheck();
-      if (mounted) setStatus(res);
+      if (mounted) setStatus(prev => ({ ...prev, clientOk: res }));
     })();
     return () => { mounted = false; };
   }, []);

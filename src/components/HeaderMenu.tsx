@@ -2,7 +2,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import type { RootStackParamList } from '../../App';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 export default function HeaderMenu() {

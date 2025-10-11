@@ -363,6 +363,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F7FA',
   },
+  Inner: {},
+breakdownTextContainer: {},
+
   content: {
     padding: 16,
   },
@@ -459,12 +462,7 @@ breakdownValue: {
     height: 12,
     borderRadius: 6,
   },
-  breakdownLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-    minWidth: 55,
-  },
+
   breakdownValue: {
     fontSize: 13,
     color: '#666',
@@ -472,21 +470,6 @@ breakdownValue: {
     flexShrink: 1,
   },
 
-  calorieRing: {
-  width: 120,
-  height: 120,
-  borderRadius: 60,
-  backgroundColor: '#fff',
-  justifyContent: 'center',
-  alignItems: 'center',
-  position: 'absolute',
-  shadowColor: '#000',           
-  shadowOffset: { width: 0, height: 2 },  
-  shadowOpacity: 0.1,            
-  shadowRadius: 4,              
-  elevation: 3,                  
-  zIndex: 10,
-},
   ringOver: {
     backgroundColor: '#fee2e2',
   },
@@ -503,9 +486,7 @@ breakdownValue: {
     fontWeight: '700',
     color: '#3F6B5C',
   },
-  overTarget: {
-    color: '#D40C19',
-  },
+ 
   ringLabel: {
     fontSize: 12,
     color: '#666',

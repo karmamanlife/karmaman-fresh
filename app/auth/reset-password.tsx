@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supabase } from '../../src/lib/supabase';
 import {
   View,
   Text,
@@ -12,7 +13,6 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { supabase } from '../../src/lib/supabase';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();

@@ -1,4 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../../src/lib/supabase'; // app/(tabs) -> ../../src/...
+
+
 import {
   View,
   Text,

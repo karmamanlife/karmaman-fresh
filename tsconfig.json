@@ -1,9 +1,44 @@
 {
   "compilerOptions": {
+    "target": "es2017",
+    "lib": [
+      "es2017",
+      "dom"
+    ],
+    "jsx": "react-native",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "allowJs": false,
+    "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "src/*"
+      ]
     }
   },
+  "include": [
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "lib/**/*.ts",
+    "lib/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "screens_backup",
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "android",
+    "ios",
+    ".expo",
+    ".expo-shared",
+    "dist",
+    "build"
+  ],
   "extends": "expo/tsconfig.base"
 }

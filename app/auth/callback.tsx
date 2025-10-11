@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
-import { getSupabase } from '../../src/lib/supabase';
+import { supabase } from "../../src/lib/supabase";
 
 export default function AuthCallback() {
   const router = useRouter();
@@ -8,12 +8,13 @@ export default function AuthCallback() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        router.replace("/"); // ✅ redirect to home if logged in
+        router.replace("/"); 
       } else {
-        router.replace("/login"); // fallback
+        router.replace("/login");
       }
     });
   }, []);
 
   return null;
 }
+

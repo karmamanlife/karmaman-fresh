@@ -3,6 +3,7 @@
     "name": "karmaman-fresh",
     "slug": "karmaman-fresh",
     "version": "1.0.0",
+    "sdkVersion": "53.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -28,7 +29,11 @@
     },
     "extra": {
       "NUTRITIONIX_APP_ID": "f2cb7916",
-      "NUTRITIONIX_API_KEY": "9a625870fa94"
-    }
+      "NUTRITIONIX_API_KEY": "84fc927803fdcd6deb279a625870fa94"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ]
   }
 }
