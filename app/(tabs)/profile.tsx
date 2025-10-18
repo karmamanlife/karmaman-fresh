@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Alert
 import { useRouter } from 'expo-router';
 import { getSupabase } from '../../src/lib/supabase';
 import * as ImagePicker from 'expo-image-picker';
+import { KoruBackground } from '../../components/KoruBackground';
+
 console.log('🟢 PROFILE SCREEN LOADED');
 
 export default function ProfileScreen() {
@@ -59,7 +61,7 @@ export default function ProfileScreen() {
   const handlePickImage = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
+
       if (status !== 'granted') {
         Alert.alert('Permission Required', 'Please allow access to your photo library');
         return;
@@ -86,10 +88,10 @@ const uploadProfilePicture = async (uri) => {
   try {
     setUploadingPic(true);
     console.log('🔵 Upload started - URI:', uri);
-    
+
     const supabase = getSupabase();
     console.log('🔵 Supabase client obtained:', !!supabase);
-    
+
     const { data: { user } } = await supabase.auth.getUser();
     console.log('🔵 User fetched:', user?.id);
 
@@ -109,7 +111,7 @@ const uploadProfilePicture = async (uri) => {
     const response = await fetch(uri);
     console.log('🔵 Fetch response status:', response.status);
     console.log('🔵 Fetch response OK:', response.ok);
-    
+
     const arrayBuffer = await response.arrayBuffer();
     console.log('🔵 ArrayBuffer created - size:', arrayBuffer.byteLength);
 
@@ -119,13 +121,13 @@ const uploadProfilePicture = async (uri) => {
 
     // Upload to Supabase Storage with ArrayBuffer
     console.log('🔵 Starting storage upload to bucket: profile-pictures');
-    console.log('🔵 Upload params:', { 
-      filePath, 
-      dataSize: uint8Array.length, 
-      contentType: `image/${fileExt}`, 
-      upsert: true 
+    console.log('🔵 Upload params:', {
+      filePath,
+      dataSize: uint8Array.length,
+      contentType: `image/${fileExt}`,
+      upsert: true
     });
-    
+
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('profile-pictures')
       .upload(filePath, uint8Array, {
@@ -241,7 +243,8 @@ const uploadProfilePicture = async (uri) => {
   if (loading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#000" />
+        <KoruBackground />
+        <ActivityIndicator size="large" color="#24534A" />
       </View>
     );
   }
@@ -250,6 +253,7 @@ const uploadProfilePicture = async (uri) => {
   if (!user) {
     return (
       <View style={styles.container}>
+        <KoruBackground />
         <Text style={styles.title}>Profile</Text>
         <View style={styles.loggedOutCard}>
           <Text style={styles.loggedOutText}>You're not signed in</Text>
@@ -278,132 +282,137 @@ const uploadProfilePicture = async (uri) => {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Profile</Text>
+    <View style={styles.container}>
+      <KoruBackground />
+      
+      <ScrollView style={styles.scrollContent}>
+        <Text style={styles.title}>Profile</Text>
 
-      {/* Profile Picture Section */}
-      <View style={styles.profilePicSection}>
-        <Pressable style={styles.profilePicContainer} onPress={handlePickImage} disabled={uploadingPic}>
-          {uploadingPic ? (
-            <ActivityIndicator size="large" color="#000" />
-          ) : profilePicUrl ? (
-            <Image source={{ uri: profilePicUrl }} style={styles.profilePic} />
-          ) : (
-            <View style={styles.placeholderContainer}>
-              <Text style={styles.silhouetteIcon}>👤</Text>
-              <Text style={styles.tapToAddText}>Tap to add photo</Text>
-            </View>
-          )}
-        </Pressable>
-        {profilePicUrl && !uploadingPic && (
-          <Pressable style={styles.changePicButton} onPress={handlePickImage}>
-            <Text style={styles.changePicText}>Change Photo</Text>
-          </Pressable>
-        )}
-      </View>
-
-      {/* User Info Card */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Account</Text>
-        <Text style={styles.emailText}>{user.email}</Text>
-        <Pressable style={styles.signOutButton} onPress={handleSignOut}>
-          <Text style={styles.signOutButtonText}>Sign Out</Text>
-        </Pressable>
-      </View>
-
-      {profile && (
-        <>
-          <Text style={styles.subtitle}>Your Information</Text>
-          <View style={styles.card}>
-            <View style={styles.infoRow}>
-              <Text style={styles.label}>Name:</Text>
-              <Text style={styles.value}>{profile.name}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.label}>Age:</Text>
-              <Text style={styles.value}>{profile.age} years</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.label}>Weight:</Text>
-              <Text style={styles.value}>{profile.weight} kg</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.label}>Height:</Text>
-              <Text style={styles.value}>{profile.height} cm</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.label}>Meals per day:</Text>
-              <Text style={styles.value}>{profile.meals_per_day}</Text>
-            </View>
-          </View>
-        </>
-      )}
-
-      {goals && (
-        <>
-          <Text style={styles.subtitle}>Your Goals</Text>
-          <View style={styles.card}>
-            {!editing ? (
-              <>
-                <View style={styles.infoRow}>
-                  <Text style={styles.label}>Goal:</Text>
-                  <Text style={styles.value}>{goalLabels[goals.goal_type]}</Text>
-                </View>
-                <View style={styles.infoRow}>
-                  <Text style={styles.label}>Training days:</Text>
-                  <Text style={styles.value}>{goals.training_days} per week</Text>
-                </View>
-                <Pressable style={styles.button} onPress={() => setEditing(true)}>
-                  <Text style={styles.buttonText}>Edit Goals</Text>
-                </Pressable>
-              </>
+        {/* Profile Picture Section */}
+        <View style={styles.profilePicSection}>
+          <Pressable style={styles.profilePicContainer} onPress={handlePickImage} disabled={uploadingPic}>
+            {uploadingPic ? (
+              <ActivityIndicator size="large" color="#24534A" />
+            ) : profilePicUrl ? (
+              <Image source={{ uri: profilePicUrl }} style={styles.profilePic} />
             ) : (
-              <>
-                <Text style={styles.editLabel}>Goal Type</Text>
-                <View style={styles.goalOptions}>
-                  {['cut', 'maintain', 'bulk'].map(g => (
-                    <Pressable
-                      key={g}
-                      style={[styles.goalOption, editGoal === g && styles.selectedGoal]}
-                      onPress={() => setEditGoal(g)}
-                    >
-                      <Text style={styles.goalText}>{goalLabels[g]}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-
-                <Text style={styles.editLabel}>Training Days per Week</Text>
-                <View style={styles.daysContainer}>
-                  {[1, 2, 3, 4, 5, 6, 7].map(d => (
-                    <Pressable
-                      key={d}
-                      style={[styles.dayButton, editTrainingDays === d && styles.selectedDay]}
-                      onPress={() => setEditTrainingDays(d)}
-                    >
-                      <Text style={[styles.dayText, editTrainingDays === d && styles.selectedDayText]}>{d}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-
-                <View style={styles.buttonRow}>
-                  <Pressable style={[styles.button, styles.cancelButton]} onPress={() => { setEditing(false); setEditGoal(goals.goal_type); setEditTrainingDays(goals.training_days); }}>
-                    <Text style={styles.buttonText}>Cancel</Text>
-                  </Pressable>
-                  <Pressable style={styles.button} onPress={handleUpdateGoals}>
-                    <Text style={styles.buttonText}>Save Changes</Text>
-                  </Pressable>
-                </View>
-              </>
+              <View style={styles.placeholderContainer}>
+                <Text style={styles.silhouetteIcon}>👤</Text>
+                <Text style={styles.tapToAddText}>Tap to add photo</Text>
+              </View>
             )}
-          </View>
-        </>
-      )}
-    </ScrollView>
+          </Pressable>
+          {profilePicUrl && !uploadingPic && (
+            <Pressable style={styles.changePicButton} onPress={handlePickImage}>
+              <Text style={styles.changePicText}>Change Photo</Text>
+            </Pressable>
+          )}
+        </View>
+
+        {/* User Info Card */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Account</Text>
+          <Text style={styles.emailText}>{user.email}</Text>
+          <Pressable style={styles.signOutButton} onPress={handleSignOut}>
+            <Text style={styles.signOutButtonText}>Sign Out</Text>
+          </Pressable>
+        </View>
+
+        {profile && (
+          <>
+            <Text style={styles.subtitle}>Your Information</Text>
+            <View style={styles.card}>
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Name:</Text>
+                <Text style={styles.value}>{profile.name}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Age:</Text>
+                <Text style={styles.value}>{profile.age} years</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Weight:</Text>
+                <Text style={styles.value}>{profile.weight} kg</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Height:</Text>
+                <Text style={styles.value}>{profile.height} cm</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Meals per day:</Text>
+                <Text style={styles.value}>{profile.meals_per_day}</Text>
+              </View>
+            </View>
+          </>
+        )}
+
+        {goals && (
+          <>
+            <Text style={styles.subtitle}>Your Goals</Text>
+            <View style={styles.card}>
+              {!editing ? (
+                <>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.label}>Goal:</Text>
+                    <Text style={styles.value}>{goalLabels[goals.goal_type]}</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.label}>Training days:</Text>
+                    <Text style={styles.value}>{goals.training_days} per week</Text>
+                  </View>
+                  <Pressable style={styles.button} onPress={() => setEditing(true)}>
+                    <Text style={styles.buttonText}>Edit Goals</Text>
+                  </Pressable>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.editLabel}>Goal Type</Text>
+                  <View style={styles.goalOptions}>
+                    {['cut', 'maintain', 'bulk'].map(g => (
+                      <Pressable
+                        key={g}
+                        style={[styles.goalOption, editGoal === g && styles.selectedGoal]}
+                        onPress={() => setEditGoal(g)}
+                      >
+                        <Text style={styles.goalText}>{goalLabels[g]}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+
+                  <Text style={styles.editLabel}>Training Days per Week</Text>
+                  <View style={styles.daysContainer}>
+                    {[1, 2, 3, 4, 5, 6, 7].map(d => (
+                      <Pressable
+                        key={d}
+                        style={[styles.dayButton, editTrainingDays === d && styles.selectedDay]}
+                        onPress={() => setEditTrainingDays(d)}
+                      >
+                        <Text style={[styles.dayText, editTrainingDays === d && styles.selectedDayText]}>{d}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+
+                  <View style={styles.buttonRow}>
+                    <Pressable style={[styles.button, styles.cancelButton]} onPress={() => { setEditing(false); setEditGoal(goals.goal_type); setEditTrainingDays(goals.training_days); }}>
+                      <Text style={styles.buttonText}>Cancel</Text>
+                    </Pressable>
+                    <Pressable style={styles.button} onPress={handleUpdateGoals}>
+                      <Text style={styles.buttonText}>Save Changes</Text>
+                    </Pressable>
+                  </View>
+                </>
+              )}
+            </View>
+          </>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
+  container: { flex: 1 },
+  scrollContent: { flex: 1, padding: 16 },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
 
   // Profile Picture Styles
@@ -415,7 +424,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -443,7 +452,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 6,
   },
   changePicText: {
@@ -454,11 +463,13 @@ const styles = StyleSheet.create({
 
   // Logged out styles
   loggedOutCard: {
-    backgroundColor: '#f8f8f8',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     padding: 30,
     borderRadius: 12,
     alignItems: 'center',
-    marginTop: 40
+    marginTop: 40,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   loggedOutText: {
     fontSize: 18,
@@ -467,7 +478,7 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   authButton: {
-    backgroundColor: '#000',
+    backgroundColor: '#3F6B5C',
     padding: 15,
     borderRadius: 8,
     width: '100%',
@@ -485,10 +496,12 @@ const styles = StyleSheet.create({
 
   // Logged in styles
   card: {
-    backgroundColor: '#f8f8f8',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     padding: 20,
     borderRadius: 12,
-    marginBottom: 20
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   cardTitle: {
     fontSize: 16,
@@ -502,7 +515,7 @@ const styles = StyleSheet.create({
     marginBottom: 15
   },
   signOutButton: {
-    backgroundColor: '#dc3545',
+    backgroundColor: '#3F6B5C',
     padding: 12,
     borderRadius: 8,
     alignItems: 'center'
@@ -517,17 +530,17 @@ const styles = StyleSheet.create({
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   label: { fontSize: 16, color: '#666' },
   value: { fontSize: 16, fontWeight: '600' },
-  button: { backgroundColor: '#000', padding: 12, borderRadius: 8, alignItems: 'center', marginTop: 15 },
+  button: { backgroundColor: '#3F6B5C', padding: 12, borderRadius: 8, alignItems: 'center', marginTop: 15 },
   cancelButton: { backgroundColor: '#666', flex: 1, marginRight: 10 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '500' },
   editLabel: { fontSize: 16, fontWeight: '600', marginTop: 10, marginBottom: 10 },
   goalOptions: { marginBottom: 20 },
-  goalOption: { padding: 15, borderWidth: 1, borderColor: '#ddd', borderRadius: 8, marginBottom: 10 },
-  selectedGoal: { borderColor: '#000', backgroundColor: '#f0f0f0' },
+  goalOption: { padding: 15, borderWidth: 1, borderColor: '#ddd', borderRadius: 8, marginBottom: 10, backgroundColor: 'rgba(255, 255, 255, 0.5)' },
+  selectedGoal: { borderColor: '#3F6B5C', backgroundColor: 'rgba(63, 107, 92, 0.1)' },
   goalText: { fontSize: 16 },
   daysContainer: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 20 },
-  dayButton: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: '#ddd', justifyContent: 'center', alignItems: 'center' },
-  selectedDay: { backgroundColor: '#000', borderColor: '#000' },
+  dayButton: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: '#ddd', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.5)' },
+  selectedDay: { backgroundColor: '#3F6B5C', borderColor: '#3F6B5C' },
   dayText: { fontSize: 16, color: '#000' },
   selectedDayText: { color: '#fff' },
   buttonRow: { flexDirection: 'row', marginTop: 20 }

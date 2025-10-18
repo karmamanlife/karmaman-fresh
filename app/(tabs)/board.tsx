@@ -1,7 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../../src/lib/supabase'; // app/(tabs) -> ../../src/...
-
-
 import {
   View,
   Text,
@@ -15,6 +12,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { getSupabase } from '../../src/lib/supabase';
+import { KoruBackground } from '../../components/KoruBackground';
 
 type Post = {
   id: string;
@@ -32,12 +30,20 @@ export default function Board() {
   // Require auth before showing the board
   useEffect(() => {
     (async () => {
+      const supabase = getSupabase();
+      if (!supabase) {
+        router.replace('/auth/sign-in');
+        return;
+      }
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) router.replace('/auth/sign-in');
     })();
   }, []);
 
   const fetchPosts = useCallback(async () => {
+    const supabase = getSupabase();
+    if (!supabase) return;
+    
     const { data, error } = await supabase
       .from('posts')
       .select('*')
@@ -52,6 +58,9 @@ export default function Board() {
 
   useEffect(() => {
     fetchPosts();
+    const supabase = getSupabase();
+    if (!supabase) return;
+    
     const channel = supabase
       .channel('posts-realtime')
       .on(
@@ -72,6 +81,9 @@ export default function Board() {
 
     setLoading(true);
     try {
+      const supabase = getSupabase();
+      if (!supabase) throw new Error('Not connected');
+      
       const {
         data: { user },
         error: userErr,
@@ -111,7 +123,11 @@ export default function Board() {
       style={{ flex: 1 }}
     >
       <View style={s.container}>
-        <Text style={s.title}>Board Posts</Text>
+        <KoruBackground />
+        
+        <View style={s.header}>
+          <Text style={s.title}>Board Posts</Text>
+        </View>
 
         <View style={s.composer}>
           <TextInput
@@ -143,11 +159,47 @@ export default function Board() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  title: { fontSize: 22, fontWeight: '700', marginBottom: 12 },
-  composer: { gap: 8, marginBottom: 12 },
-  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 12, minHeight: 60 },
-  card: { borderWidth: 1, borderColor: '#eee', borderRadius: 12, padding: 12 },
-  cardContent: { fontSize: 16 },
-  meta: { marginTop: 6, fontSize: 12, color: '#666' },
+  container: { 
+    flex: 1,
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 48,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  title: { 
+    fontSize: 24, 
+    fontWeight: '700',
+    color: '#24534A',
+  },
+  composer: { 
+    gap: 8,
+    padding: 16,
+  },
+  input: { 
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    padding: 12,
+    minHeight: 60,
+    backgroundColor: '#fff',
+  },
+  card: { 
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 12,
+    padding: 12,
+    marginHorizontal: 16,
+  },
+  cardContent: { 
+    fontSize: 16,
+  },
+  meta: { 
+    marginTop: 6,
+    fontSize: 12,
+    color: '#666',
+  },
 });

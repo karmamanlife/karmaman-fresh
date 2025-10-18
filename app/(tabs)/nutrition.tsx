@@ -14,6 +14,7 @@ import {
 import { getSupabase } from '../../src/lib/supabase';
 import { searchFood, getFoodNutrients } from '../../src/services/foodApi';
 import { Card, CardHeader, CardContent } from '../../src/components/ui/Card';
+import { KoruBackground } from '../../components/KoruBackground';
 
 type UserNutritionProfile = {
   daily_calories: number;
@@ -602,6 +603,7 @@ setStagedFoods([]);
   if (!profile) {
     return (
       <View style={styles.container}>
+        <KoruBackground />
         <ActivityIndicator size="large" color="#3F6B5C" />
       </View>
     );
@@ -636,6 +638,7 @@ setStagedFoods([]);
 
   return (
     <View style={styles.container}>
+      <KoruBackground />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Nutrition</Text>
         <Pressable
@@ -648,7 +651,7 @@ setStagedFoods([]);
         </Pressable>
       </View>
 
-      <Card variant="elevated" style={styles.targetsCard}>
+      <Card variant="outlined" style={styles.targetsCard}>
         <CardHeader title="Daily Targets" />
         <CardContent>
           <View style={styles.macrosRow}>
@@ -709,7 +712,7 @@ setStagedFoods([]);
             {MEAL_TYPES.map((mealType) => {
               const logged = dailyTotals[mealType.number] || { calories: 0, protein: 0, carbs: 0, fats: 0 };
               return (
-                <Card key={`${mealType.number}-${logged.calories}`} variant="default">
+                <Card key={`${mealType.number}-${logged.calories}`} variant="outlined">
                   <CardHeader
                     title={mealType.name}
                     icon={<Text style={styles.mealEmoji}>{mealType.emoji}</Text>}
@@ -1089,8 +1092,8 @@ setStagedFoods([]);
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
+  container: { flex: 1 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 48, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#065f46' },
   historyButton: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#3F6B5C', borderRadius: 8 },
   historyButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },

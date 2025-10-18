@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   },
 
   card_outlined: {
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderWidth: 1,
     borderColor: COLORS.border,
     ...Platform.select({
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(163, 217, 161, 0.1)',
+    backgroundColor: 'rgba(163, 217, 161, 0.3)',
   },
 
   cardHeader: {
