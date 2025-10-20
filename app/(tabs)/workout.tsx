@@ -1,33 +1,117 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { ScrollView, StyleSheet, View, Text, Image, Pressable } from 'react-native';
 import { Card, CardHeader, CardContent } from '../../src/components/ui/Card';
 import { KoruBackground } from '../../components/KoruBackground';
+import { useRouter } from 'expo-router';
 
 export default function WorkoutScreen() {
+  const router = useRouter();
+
   return (
     <View style={styles.container}>
       <KoruBackground />
       
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Workouts</Text>
-      </View>
+      <ScrollView style={styles.scrollContent} contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <Image
+            source={require('../../assets/images/karmamanFull.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={styles.date}>
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </Text>
+        </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+        {/* Today's Workout Card */}
         <Card variant="outlined">
           <CardHeader title="Today's Workout" />
-          <CardContent>
-            <Text style={styles.placeholderText}>
-              Your workout plan will appear here
-            </Text>
+          <CardContent style={{ position: 'relative', overflow: 'hidden', padding: 0, minHeight: 200 }}>
+            <Image
+              source={require('../../assets/images/UpperTorso2.png')}
+              style={styles.workoutBackground}
+              resizeMode="cover"
+            />
+            <View style={styles.workoutOverlay}>
+              <Text style={styles.workoutTitle}>Upper Body Strength</Text>
+              <Text style={styles.workoutMeta}>45 min • 6 exercises</Text>
+              <Pressable 
+                style={styles.workoutButton} 
+                onPress={() => router.push('/workout/today')}
+              >
+                <Text style={styles.workoutButtonText}>Let's Go!</Text>
+              </Pressable>
+            </View>
           </CardContent>
         </Card>
 
+        {/* Workout Report Card */}
         <Card variant="outlined">
-          <CardHeader title="This Week" />
+          <CardHeader 
+            title="Workout Report" 
+            subtitle="Track your progress"
+          />
           <CardContent>
-            <Text style={styles.placeholderText}>
-              Weekly workout schedule coming soon
-            </Text>
+            <View style={styles.reportContent}>
+              <View style={styles.reportItem}>
+                <Text style={styles.reportValue}>12</Text>
+                <Text style={styles.reportLabel}>Workouts This Month</Text>
+              </View>
+              <View style={styles.reportItem}>
+                <Text style={styles.reportValue}>540</Text>
+                <Text style={styles.reportLabel}>Total Minutes</Text>
+              </View>
+              <View style={styles.reportItem}>
+                <Text style={styles.reportValue}>85%</Text>
+                <Text style={styles.reportLabel}>Completion Rate</Text>
+              </View>
+            </View>
+          </CardContent>
+        </Card>
+
+        {/* Analysis Card */}
+        <Card variant="outlined">
+          <CardHeader 
+            title="Performance Analysis" 
+            subtitle="Your strength trends"
+          />
+          <CardContent>
+            <View style={styles.analysisContent}>
+              <Text style={styles.analysisText}>📈 Bench Press: +15% strength gain</Text>
+              <Text style={styles.analysisText}>💪 Overall volume: +22% vs last month</Text>
+              <Text style={styles.analysisText}>🎯 Consistency: 4.2 workouts/week</Text>
+              <Text style={styles.analysisText}>⚡ Best performance: Monday AM sessions</Text>
+            </View>
+          </CardContent>
+        </Card>
+
+        {/* Workout History Card */}
+        <Card variant="outlined">
+          <CardHeader title="Recent Workouts" />
+          <CardContent>
+            <View style={styles.historyContent}>
+              <View style={styles.historyItem}>
+                <View style={styles.historyLeft}>
+                  <Text style={styles.historyDate}>Oct 19</Text>
+                  <Text style={styles.historyName}>Lower Body</Text>
+                </View>
+                <Text style={styles.historyDuration}>52 min</Text>
+              </View>
+              <View style={styles.historyItem}>
+                <View style={styles.historyLeft}>
+                  <Text style={styles.historyDate}>Oct 17</Text>
+                  <Text style={styles.historyName}>Push Day</Text>
+                </View>
+                <Text style={styles.historyDuration}>48 min</Text>
+              </View>
+              <View style={styles.historyItem}>
+                <View style={styles.historyLeft}>
+                  <Text style={styles.historyDate}>Oct 15</Text>
+                  <Text style={styles.historyName}>Pull Day</Text>
+                </View>
+                <Text style={styles.historyDuration}>45 min</Text>
+              </View>
+            </View>
           </CardContent>
         </Card>
       </ScrollView>
@@ -38,30 +122,119 @@ export default function WorkoutScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
   },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 48,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#24534A',
-  },
-  content: {
+  scrollContent: {
     flex: 1,
   },
-  contentContainer: {
+  content: {
     padding: 16,
+  },
+  header: {
+    marginBottom: 24,
+    paddingTop: 48,
+  },
+  logo: {
+    width: 250,
+    height: 60,
+    marginBottom: 8,
+    tintColor: '#42534A',
+  },
+  date: {
+    fontSize: 16,
+    color: '#666',
+  },
+  workoutBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '150%',
+    opacity: 0.3,
+  },
+  workoutOverlay: {
+    padding: 0,
+    minHeight: 150,
+    justifyContent: 'center',
+  },
+  workoutTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#42534A',
+    marginBottom: 8,
+  },
+  workoutMeta: {
+    fontSize: 14,
+    color: '#666',
+  },
+  workoutButton: {
+    backgroundColor: '#D40C19',
+    paddingVertical: 18,
+    paddingHorizontal: 36,
+    borderRadius: 8,
+    marginTop: 16,
+    alignSelf: 'flex-start',
+  },
+  workoutButtonText: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: '600',
+  },
+  reportContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 16,
+  },
+  reportItem: {
+    alignItems: 'center',
+  },
+  reportValue: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#3F6B5C',
+    marginBottom: 4,
+  },
+  reportLabel: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+  },
+  analysisContent: {
     gap: 12,
   },
-  placeholderText: {
+  analysisText: {
+    fontSize: 15,
+    color: '#42534A',
+    lineHeight: 22,
+  },
+  historyContent: {
+    gap: 16,
+  },
+  historyItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  historyLeft: {
+    gap: 4,
+  },
+  historyDate: {
     fontSize: 14,
-    color: '#6b7280',
-    textAlign: 'center',
-    paddingVertical: 20,
+    color: '#666',
+  },
+  historyName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#42534A',
+  },
+  historyDuration: {
+    fontSize: 14,
+    color: '#3F6B5C',
+    fontWeight: '600',
   },
 });
