@@ -1,28 +1,31 @@
 import React from 'react';
 import { ScrollView, StyleSheet, View, Text, Image, Pressable } from 'react-native';
 import { Card, CardHeader, CardContent } from '../../src/components/ui/Card';
-import { KoruBackground } from '../../components/KoruBackground';
+import { KoruBackground } from '../../src/components/KoruBackground';
+import { ProfileAvatar } from '../../src/components/ProfileAvatar';
 import { useRouter } from 'expo-router';
 
 export default function WorkoutScreen() {
   const router = useRouter();
 
-  return (
-    <View style={styles.container}>
-      <KoruBackground />
-      
-      <ScrollView style={styles.scrollContent} contentContainerStyle={styles.content}>
-        <View style={styles.header}>
+ return (
+  <View style={styles.container}>
+    <KoruBackground />
+    
+    <ScrollView style={styles.scrollContent} contentContainerStyle={styles.content}>
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
           <Image
             source={require('../../assets/images/karmamanFull.png')}
             style={styles.logo}
             resizeMode="contain"
           />
-          <Text style={styles.date}>
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-          </Text>
+          <ProfileAvatar size={40} />
         </View>
-
+      </View>
+      <Text style={styles.date}>
+        {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+      </Text>
         {/* Today's Workout Card */}
         <Card variant="outlined">
           <CardHeader title="Today's Workout" />
@@ -127,12 +130,18 @@ const styles = StyleSheet.create({
   scrollContent: {
     flex: 1,
   },
-  content: {
-    padding: 16,
-  },
   header: {
-    marginBottom: 24,
+    paddingHorizontal: 16,
     paddingTop: 48,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+ headerTop: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 8,
   },
   logo: {
     width: 250,
@@ -143,6 +152,7 @@ const styles = StyleSheet.create({
   date: {
     fontSize: 16,
     color: '#666',
+    marginBottom: 16,
   },
   workoutBackground: {
     position: 'absolute',

@@ -4,7 +4,8 @@ import { Card, CardHeader, CardContent } from '../../src/components/ui/Card';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { getSupabase } from '../../src/lib/supabase';
-import { KoruBackground } from '../../components/KoruBackground';
+import { KoruBackground } from '../../src/components/KoruBackground';
+import { ProfileAvatar } from '../../src/components/ProfileAvatar';
 import Svg, { Circle } from 'react-native-svg';
 
 type UserProfile = {
@@ -116,18 +117,21 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <KoruBackground />
       
-      <ScrollView style={styles.scrollContent} contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <Image
-            source={require('../../assets/images/karmamanFull.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <Text style={styles.date}>
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-          </Text>
-        </View>
+  <View style={styles.header}>
+  <View style={styles.headerTop}>
+    <Image
+      source={require('../../assets/images/karmamanFull.png')}
+      style={styles.logo}
+      resizeMode="contain"
+    />
+    <ProfileAvatar size={40} />
+  </View>
+</View>
+<Text style={styles.date}>
+  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+</Text>
 
+<ScrollView style={styles.scrollContent} contentContainerStyle={styles.content}>
         <Card variant="outlined">
           <CardHeader 
             title="Today's Nutrition"
@@ -333,22 +337,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 16,
-  },
-  header: {
-    marginBottom: 24,
-    paddingTop: 48,
+  padding: 16,
+},
+header: {
+  paddingHorizontal: 16,
+  paddingTop: 48,
+  paddingBottom: 12,
+  borderBottomWidth: 1,
+  borderBottomColor: '#e0e0e0',
+  marginBottom: 24,
+},
+ headerTop: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 8,
   },
   logo: {
-  width: 200,
-  height: 80,
+  width: 250,
+  height: 60,
   marginBottom: 8,
   tintColor: '#42534A',
 },
-  date: {
-    fontSize: 16,
-    color: '#666',
-  },
+ date: {
+  fontSize: 16,
+  color: '#666',
+  marginBottom: 16,
+  marginLeft: 16,
+  width: '100%',
+},
   link: {
     color: '#42534A',
     fontSize: 14,

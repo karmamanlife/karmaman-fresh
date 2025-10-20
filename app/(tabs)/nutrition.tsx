@@ -10,11 +10,13 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
+  Image,
 } from 'react-native';
 import { getSupabase } from '../../src/lib/supabase';
 import { searchFood, getFoodNutrients } from '../../src/services/foodApi';
 import { Card, CardHeader, CardContent } from '../../src/components/ui/Card';
-import { KoruBackground } from '../../components/KoruBackground';
+import { KoruBackground } from '../../src/components/KoruBackground';
+import { ProfileAvatar } from '../../src/components/ProfileAvatar';
 
 type UserNutritionProfile = {
   daily_calories: number;
@@ -636,22 +638,24 @@ setStagedFoods([]);
     fats: profile.daily_fats - totalConsumed.fats,
   };
 
-  return (
-    <View style={styles.container}>
-      <KoruBackground />
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Nutrition</Text>
-        <Pressable
-          style={styles.historyButton}
-          onPress={() => setShowHistory(!showHistory)}
-        >
-          <Text style={styles.historyButtonText}>
-            {showHistory ? 'Today' : 'History'}
-          </Text>
-        </Pressable>
-      </View>
-
-      <Card variant="outlined" style={styles.targetsCard}>
+ return (
+  <View style={styles.container}>
+    <KoruBackground />
+    <View style={styles.header}>
+  <View style={styles.headerTop}>
+    <Image
+      source={require('../../assets/images/karmamanFull.png')}
+      style={styles.logo}
+      resizeMode="contain"
+    />
+    <ProfileAvatar size={40} />
+  </View>
+</View>
+<Text style={styles.date}>
+  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+</Text>
+  
+    <Card variant="outlined" style={styles.targetsCard}>
         <CardHeader title="Daily Targets" />
         <CardContent>
           <View style={styles.macrosRow}>
@@ -701,7 +705,14 @@ setStagedFoods([]);
           </View>
         </CardContent>
       </Card>
-
+<Pressable
+  style={styles.historyButton}
+  onPress={() => setShowHistory(!showHistory)}
+>
+  <Text style={styles.historyButtonText}>
+    {showHistory ? 'Today' : 'History'}
+  </Text>
+</Pressable>
       <ScrollView 
   style={styles.content} 
   contentContainerStyle={styles.contentContainer}
@@ -1093,9 +1104,40 @@ setStagedFoods([]);
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 48, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
+  header: { 
+  paddingHorizontal: 16, 
+  paddingTop: 48, 
+  paddingBottom: 12, 
+  borderBottomWidth: 1, 
+  borderBottomColor: '#e0e0e0',
+  marginBottom: 24,
+},
+  headerTop: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 8,
+},
+logo: {
+  width: 250,
+  height: 60,
+  tintColor: '#42534A',
+},
+date: {
+  fontSize: 16,
+  marginLeft: 16,
+  color: '#666',
+},
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#065f46' },
-  historyButton: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#3F6B5C', borderRadius: 8 },
+  historyButton: {
+  alignSelf: 'flex-end',
+  paddingVertical: 8,
+  paddingHorizontal: 16,
+  backgroundColor: '#3F6B5C',
+  borderRadius: 6,
+  marginBottom: 16,
+  marginRight: 16,
+},
   historyButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
   targetsCard: { marginHorizontal: 16, marginTop: 16 },
   macrosRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 16 },

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Alert
 import { useRouter } from 'expo-router';
 import { getSupabase } from '../../src/lib/supabase';
 import * as ImagePicker from 'expo-image-picker';
-import { KoruBackground } from '../../components/KoruBackground';
+import { KoruBackground } from '../../src/components/KoruBackground';
 
 console.log('🟢 PROFILE SCREEN LOADED');
 

@@ -9,10 +9,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { getSupabase } from '../../src/lib/supabase';
-import { KoruBackground } from '../../components/KoruBackground';
+import { KoruBackground } from '../../src/components/KoruBackground';
+import { ProfileAvatar } from '../../src/components/ProfileAvatar';
 
 type Post = {
   id: string;
@@ -118,16 +120,27 @@ export default function Board() {
   }, [content]);
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.select({ ios: 'padding', android: undefined })}
-      style={{ flex: 1 }}
-    >
-      <View style={s.container}>
-        <KoruBackground />
-        
-        <View style={s.header}>
-          <Text style={s.title}>Board Posts</Text>
-        </View>
+  <KeyboardAvoidingView
+    behavior={Platform.select({ ios: 'padding', android: undefined })}
+    style={{ flex: 1 }}
+  >
+    <View style={s.container}>
+      <KoruBackground />
+      
+  <View style={s.header}>
+  <View style={s.headerTop}>
+    <Image
+      source={require('../../assets/images/karmamanFull.png')}
+      style={s.logo}
+      resizeMode="contain"
+    />
+    <ProfileAvatar size={40} />
+  </View>
+</View>
+<Text style={s.date}>
+  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+</Text>
+  
 
         <View style={s.composer}>
           <TextInput
@@ -169,6 +182,19 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
+  headerTop: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 8,
+  },
+
+  logo: {
+  width: 250,
+  height: 60,
+  marginBottom: 8,
+  tintColor: '#42534A',
+},
   title: { 
     fontSize: 24, 
     fontWeight: '700',

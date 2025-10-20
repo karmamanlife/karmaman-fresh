@@ -7,7 +7,7 @@ export const KoruBackground: React.FC = () => {
   return (
     <View style={styles.container} pointerEvents="none">
       <Image
-        source={require('../assets/images/Koru.png')}
+        source={require('../../assets/images/Koru.png')}
         style={styles.image}
         resizeMode="contain"
       />

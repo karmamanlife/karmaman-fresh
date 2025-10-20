@@ -49,7 +49,7 @@ export default function Layout() {
       <Tabs.Screen name="workout" options={{ title: 'Workout' }} />
       <Tabs.Screen name="nutrition" options={{ title: 'Nutrition' }} />
       <Tabs.Screen name="board" options={{ title: 'Tribe' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      <Tabs.Screen name="profile" options={{ href: null }} />
     </Tabs>
   </>
 );

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View, Text, Image, TextInput, Pressable } from 'react-native';
 import { Card, CardContent } from '../../src/components/ui/Card';
-import { KoruBackground } from '../../components/KoruBackground';
+import { KoruBackground } from '../../src/components/KoruBackground';
 import { useRouter } from 'expo-router';
 
 type Exercise = {

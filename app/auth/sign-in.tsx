@@ -4,7 +4,7 @@ import { View, Text, TextInput, Pressable, ActivityIndicator } from "react-nativ
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { getSupabase } from "../../src/lib/supabase";
-import { KoruBackground } from "../../components/KoruBackground";
+import { KoruBackground } from '../../src/components/KoruBackground';
 
 export default function SignInScreen() {
   const r = useRouter();
