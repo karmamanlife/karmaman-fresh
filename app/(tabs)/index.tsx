@@ -201,19 +201,22 @@ export default function HomeScreen() {
           </CardContent>
         </Card>
 
-       <Card variant="outlined" pressable onPress={() => router.push('/workout')}>
+      <Card variant="outlined">
   <CardHeader title="Today's Workout" />
   <CardContent style={{ position: 'relative', overflow: 'hidden', padding: 0, minHeight: 200 }}>
-  <Image
-    source={require('../../assets/images/UpperTorso2.png')}
-    style={styles.workoutBackground}
-    resizeMode="cover"
-  />
-  <View style={styles.workoutOverlay}>
-    <Text style={styles.workoutTitle}>Upper Body Strength</Text>
-    <Text style={styles.workoutMeta}>45 min • 6 exercises</Text>
-  </View>
-</CardContent>
+    <Image
+      source={require('../../assets/images/UpperTorso2.png')}
+      style={styles.workoutBackground}
+      resizeMode="cover"
+    />
+    <View style={styles.workoutOverlay}>
+      <Text style={styles.workoutTitle}>Upper Body Strength</Text>
+      <Text style={styles.workoutMeta}>45 min • 6 exercises</Text>
+      <Pressable style={styles.workoutButton} onPress={() => router.push('/workout/today')}>
+  <Text style={styles.workoutButtonText}>Let's Go!</Text>
+</Pressable>
+    </View>
+  </CardContent>
 </Card>
 
         <Card variant="outlined">
@@ -438,6 +441,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+ workoutButton: {
+  backgroundColor: '#D40C19',
+  paddingVertical: 18,
+  paddingHorizontal: 36,
+  borderRadius: 8,
+  marginTop: 16,
+  alignSelf: 'flex-start',
+},
+workoutButtonText: {
+  color: '#fff',
+  fontSize: 24,
+  fontWeight: '600',
+},
   emoji: {
     fontSize: 24,
   },
