@@ -4,6 +4,10 @@ import { useRouter } from 'expo-router';
 import { getSupabase } from '../../src/lib/supabase';
 import * as ImagePicker from 'expo-image-picker';
 import { KoruBackground } from '../../src/components/KoruBackground';
+import { ProfileAvatar } from '../../src/components/ProfileAvatar';
+
+
+
 
 console.log('🟢 PROFILE SCREEN LOADED');
 
@@ -284,11 +288,22 @@ const uploadProfilePicture = async (uri) => {
   return (
     <View style={styles.container}>
       <KoruBackground />
-      
-      <ScrollView style={styles.scrollContent}>
-        <Text style={styles.title}>Profile</Text>
+     <ScrollView style={styles.scrollContent} contentContainerStyle={styles.content}>
+  <View style={styles.header}>
+   <View style={styles.headerTop}>
+     <Image
+       source={require('../../assets/images/karmamanFull.png')}
+       style={styles.logo}
+       resizeMode="contain"
+     />
+     <ProfileAvatar size={40} />
+   </View>
+ </View>
+ <Text style={styles.date}>
+   {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+ </Text>
 
-        {/* Profile Picture Section */}
+  {/* Profile Picture Section */}
         <View style={styles.profilePicSection}>
           <Pressable style={styles.profilePicContainer} onPress={handlePickImage} disabled={uploadingPic}>
             {uploadingPic ? (
@@ -493,6 +508,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600'
   },
+  header: {
+  paddingHorizontal: 16,
+  paddingTop: 48,
+  paddingBottom: 12,
+  borderBottomWidth: 1,
+  borderBottomColor: '#e0e0e0',
+  
+},
+headerTop: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 8,
+},
+logo: {
+  width: 200,
+  height: 60,
+  marginBottom: 8,
+  tintColor: '#42534A',
+},
+date: {
+  fontSize: 16,
+  color: '#666',
+},
+content: {
+  padding: 16,
+},
 
   // Logged in styles
   card: {
