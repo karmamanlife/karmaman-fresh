@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, View, Text, Image, TextInput, Pressable } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { ScrollView, StyleSheet, View, Text, Image, TextInput, Pressable, Alert } from 'react-native';
 import { Card, CardContent } from '../../src/components/ui/Card';
 import { KoruBackground } from '../../src/components/KoruBackground';
 import { useRouter } from 'expo-router';
+import { createWorkoutLog, saveExerciseSet, completeWorkoutLog } from '../../src/services/workoutService';
 
 type Exercise = {
   id: string;
@@ -13,8 +14,16 @@ type Exercise = {
   notes?: string;
 };
 
+type SetData = {
+  weight: string;
+  reps: string;
+};
+
 export default function TodaysWorkoutScreen() {
   const router = useRouter();
+  const [workoutLogId, setWorkoutLogId] = useState<string | null>(null);
+  const [workoutStartTime] = useState<Date>(new Date());
+  const [completedExercises, setCompletedExercises] = useState<Set<string>>(new Set());
   
   const [exercises] = useState<Exercise[]>([
     {
@@ -43,11 +52,107 @@ export default function TodaysWorkoutScreen() {
     },
   ]);
 
+  // Initialize set data for all exercises
+  const [setData, setSetData] = useState<Record<string, SetData[]>>(() => {
+    const initial: Record<string, SetData[]> = {};
+    exercises.forEach(exercise => {
+      initial[exercise.id] = Array.from({ length: exercise.sets }).map(() => ({
+        weight: '',
+        reps: '',
+      }));
+    });
+    return initial;
+  });
+
+  // Create workout log on mount
+  useEffect(() => {
+    const initWorkout = async () => {
+      const logId = await createWorkoutLog(null);
+      if (logId) {
+        setWorkoutLogId(logId);
+      } else {
+        Alert.alert('Error', 'Failed to start workout session');
+      }
+    };
+    initWorkout();
+  }, []);
+
+  const updateSetData = (exerciseId: string, setIndex: number, field: 'weight' | 'reps', value: string) => {
+    setSetData(prev => ({
+      ...prev,
+      [exerciseId]: prev[exerciseId].map((set, idx) =>
+        idx === setIndex ? { ...set, [field]: value } : set
+      ),
+    }));
+  };
+
+  const handleMarkComplete = async (exercise: Exercise) => {
+    if (!workoutLogId) {
+      Alert.alert('Error', 'Workout session not initialized');
+      return;
+    }
+
+    const exerciseSets = setData[exercise.id];
+    
+    // Validate that at least one set has data
+    const hasData = exerciseSets.some(set => set.weight || set.reps);
+    if (!hasData) {
+      Alert.alert('No Data', 'Please enter at least one set before marking complete');
+      return;
+    }
+
+    // Save all sets to database
+    let successCount = 0;
+    for (let i = 0; i < exerciseSets.length; i++) {
+      const set = exerciseSets[i];
+      if (set.weight || set.reps) {
+        const success = await saveExerciseSet({
+          workout_log_id: workoutLogId,
+          exercise_name: exercise.name,
+          set_number: i + 1,
+          reps: parseInt(set.reps) || 0,
+          weight: parseFloat(set.weight) || null,
+          rpe: null,
+        });
+        if (success) successCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      setCompletedExercises(prev => new Set(prev).add(exercise.id));
+      Alert.alert('Success', `${exercise.name} completed! ${successCount} sets logged.`);
+    } else {
+      Alert.alert('Error', 'Failed to save exercise data');
+    }
+  };
+
+  const handleFinishWorkout = async () => {
+    if (!workoutLogId) {
+      router.back();
+      return;
+    }
+
+    const durationMinutes = Math.round((new Date().getTime() - workoutStartTime.getTime()) / 60000);
+    const success = await completeWorkoutLog(workoutLogId, durationMinutes);
+    
+    if (success) {
+      Alert.alert('Workout Complete!', `Great job! Duration: ${durationMinutes} minutes`, [
+        { text: 'OK', onPress: () => router.back() }
+      ]);
+    } else {
+      router.back();
+    }
+  };
+
   return (
     <View style={styles.container}>
       <KoruBackground />
       
-      <ScrollView style={styles.scrollContent} contentContainerStyle={styles.content}>
+      <ScrollView 
+  style={styles.scrollContent} 
+  contentContainerStyle={styles.content}
+  keyboardShouldPersistTaps="handled"
+>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()}>
             <Text style={styles.backButton}>← Back</Text>
@@ -67,69 +172,91 @@ export default function TodaysWorkoutScreen() {
           <Text style={styles.workoutMeta}>45 min • 6 exercises</Text>
         </View>
 
-        {exercises.map((exercise) => (
-          <Card key={exercise.id} variant="solid" style={styles.exerciseCard}>
-            <CardContent style={styles.exerciseContent}>
-              {/* Exercise Image */}
-              <View style={styles.imageContainer}>
-                <Image
-                  source={require('../../assets/images/UpperTorso2.png')}
-                  style={styles.exerciseImage}
-                  resizeMode="cover"
-                />
-              </View>
+        {exercises.map((exercise) => {
+          const isCompleted = completedExercises.has(exercise.id);
+          return (
+            <Card key={exercise.id} variant="outlined" style={styles.exerciseCard}>
+              <CardContent style={styles.exerciseContent}>
+                {/* Exercise Image */}
+                <View style={styles.imageContainer}>
+                  <Image
+                    source={require('../../assets/images/UpperTorso2.png')}
+                    style={styles.exerciseImage}
+                    resizeMode="cover"
+                  />
+                  {isCompleted && (
+                    <View style={styles.completedBadge}>
+                      <Text style={styles.completedBadgeText}>✓ Complete</Text>
+                    </View>
+                  )}
+                </View>
 
-              {/* Exercise Info */}
-              <View style={styles.exerciseInfo}>
-                <Text style={styles.exerciseName}>{exercise.name}</Text>
-                <Text style={styles.exerciseTarget}>{exercise.sets} sets • {exercise.targetReps} reps</Text>
-                {exercise.notes && (
-                  <Text style={styles.exerciseNotes}>💡 {exercise.notes}</Text>
-                )}
-              </View>
+                {/* Exercise Info */}
+                <View style={styles.exerciseInfo}>
+                  <Text style={styles.exerciseName}>{exercise.name}</Text>
+                  <Text style={styles.exerciseTarget}>{exercise.sets} sets • {exercise.targetReps} reps</Text>
+                  {exercise.notes && (
+                    <Text style={styles.exerciseNotes}>💡 {exercise.notes}</Text>
+                  )}
+                </View>
 
-              {/* Sets Input Grid */}
-              <View style={styles.setsContainer}>
-                {Array.from({ length: exercise.sets }).map((_, setIndex) => (
-                  <View key={setIndex} style={styles.setRow}>
-                    <Text style={styles.setLabel}>Set {setIndex + 1}</Text>
-                    <View style={styles.inputGroup}>
-                      <View style={styles.inputWrapper}>
-                        <TextInput
-                          style={styles.input}
-                          placeholder="0"
-                          placeholderTextColor="#999"
-                          keyboardType="numeric"
-                        />
-                        <Text style={styles.inputLabel}>kg</Text>
-                      </View>
-                      <Text style={styles.inputSeparator}>×</Text>
-                      <View style={styles.inputWrapper}>
-                        <TextInput
-                          style={styles.input}
-                          placeholder="0"
-                          placeholderTextColor="#999"
-                          keyboardType="numeric"
-                        />
-                        <Text style={styles.inputLabel}>reps</Text>
+                {/* Sets Input Grid */}
+                <View style={styles.setsContainer}>
+                  {Array.from({ length: exercise.sets }).map((_, setIndex) => (
+                    <View key={setIndex} style={styles.setRow}>
+                      <Text style={styles.setLabel}>Set {setIndex + 1}</Text>
+                      <View style={styles.inputGroup}>
+                        <View style={styles.inputWrapper}>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="0"
+                            placeholderTextColor="#999"
+                            keyboardType="numeric"
+                            value={setData[exercise.id][setIndex].weight}
+                            onChangeText={(value) => updateSetData(exercise.id, setIndex, 'weight', value)}
+                            editable={!isCompleted}
+                          />
+                          <Text style={styles.inputLabel}>kg</Text>
+                        </View>
+                        <Text style={styles.inputSeparator}>×</Text>
+                        <View style={styles.inputWrapper}>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="0"
+                            placeholderTextColor="#999"
+                            keyboardType="numeric"
+                            value={setData[exercise.id][setIndex].reps}
+                            onChangeText={(value) => updateSetData(exercise.id, setIndex, 'reps', value)}
+                            editable={!isCompleted}
+                          />
+                          <Text style={styles.inputLabel}>reps</Text>
+                        </View>
                       </View>
                     </View>
-                  </View>
-                ))}
-              </View>
+                  ))}
+                </View>
 
-              {/* Complete Exercise Button */}
-              <Pressable style={styles.completeButton}>
-                <Text style={styles.completeButtonText}>Mark Complete</Text>
-              </Pressable>
-            </CardContent>
-          </Card>
-        ))}
+                {/* Complete Exercise Button */}
+                <Pressable 
+                  style={[styles.completeButton, isCompleted && styles.completeButtonDisabled]}
+                  onPress={() => handleMarkComplete(exercise)}
+                  disabled={isCompleted}
+                >
+                  <Text style={styles.completeButtonText}>
+                    {isCompleted ? '✓ Completed' : 'Mark Complete'}
+                  </Text>
+                </Pressable>
+              </CardContent>
+            </Card>
+          );
+        })}
 
-        {/* Finish Workout Button */}
-        <Pressable style={styles.finishButton} onPress={() => router.back()}>
-          <Text style={styles.finishButtonText}>Finish Workout</Text>
-        </Pressable>
+       {/* Finish Workout Button */}
+<Pressable style={styles.finishButton} onPress={handleFinishWorkout}>
+  <Text style={styles.finishButtonText}>
+    {completedExercises.size === exercises.length ? 'Nice Work!!' : 'Finish Workout'}
+  </Text>
+</Pressable>
       </ScrollView>
     </View>
   );
@@ -145,6 +272,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+    paddingBottom: 400,
   },
   header: {
     marginBottom: 24,
@@ -199,10 +327,25 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
     overflow: 'hidden',
+    position: 'relative',
   },
   exerciseImage: {
     width: '100%',
     height: '100%',
+  },
+  completedBadge: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: '#3F6B5C',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  completedBadgeText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   exerciseInfo: {
     padding: 16,
@@ -278,6 +421,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     margin: 16,
     marginTop: 8,
+  },
+  completeButtonDisabled: {
+    backgroundColor: '#A3D9A1',
   },
   completeButtonText: {
     color: '#fff',
