@@ -171,3 +171,49 @@ export async function completeWorkoutLog(workoutLogId: string, durationMinutes: 
     return false;
   }
 }
+
+// Check if today's workout is complete (all exercises marked done)
+export async function isTodaysWorkoutComplete(totalExercises: number): Promise<boolean> {
+  try {
+    const supabase = getSupabase();
+    if (!supabase) return false;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    // Get today's date range
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    // Get today's workout log
+    const { data: workoutLog } = await supabase
+      .from('user_workout_logs')
+      .select('id')
+      .eq('user_id', user.id)
+      .gte('logged_at', todayStart.toISOString())
+      .lte('logged_at', todayEnd.toISOString())
+      .order('logged_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (!workoutLog) return false;
+
+    // Count distinct exercises logged
+    const { data: exercises } = await supabase
+      .from('user_exercise_sets')
+      .select('exercise_name')
+      .eq('workout_log_id', workoutLog.id);
+
+    if (!exercises) return false;
+
+    // Get unique exercise names
+    const uniqueExercises = new Set(exercises.map(e => e.exercise_name));
+    
+    return uniqueExercises.size >= totalExercises;
+  } catch (error) {
+    console.error('Error checking workout completion:', error);
+    return false;
+  }
+}

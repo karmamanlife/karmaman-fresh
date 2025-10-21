@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, View, Text, Image, TextInput, Pressable, Alert 
 import { Card, CardContent } from '../../src/components/ui/Card';
 import { KoruBackground } from '../../src/components/KoruBackground';
 import { useRouter } from 'expo-router';
-import { createWorkoutLog, saveExerciseSet, completeWorkoutLog } from '../../src/services/workoutService';
+import { createWorkoutLog, saveExerciseSet, completeWorkoutLog, isTodaysWorkoutComplete } from '../../src/services/workoutService';
 
 type Exercise = {
   id: string;
@@ -24,7 +24,7 @@ export default function TodaysWorkoutScreen() {
   const [workoutLogId, setWorkoutLogId] = useState<string | null>(null);
   const [workoutStartTime] = useState<Date>(new Date());
   const [completedExercises, setCompletedExercises] = useState<Set<string>>(new Set());
-  
+  const [allExercisesComplete, setAllExercisesComplete] = useState(false);
   const [exercises] = useState<Exercise[]>([
     {
       id: '1',
@@ -76,6 +76,14 @@ export default function TodaysWorkoutScreen() {
     };
     initWorkout();
   }, []);
+  // Check if workout already complete
+useEffect(() => {
+  const checkCompletion = async () => {
+    const complete = await isTodaysWorkoutComplete(exercises.length);
+    setAllExercisesComplete(complete);
+  };
+  checkCompletion();
+}, [exercises.length]);
 
   const updateSetData = (exerciseId: string, setIndex: number, field: 'weight' | 'reps', value: string) => {
     setSetData(prev => ({
@@ -126,23 +134,48 @@ export default function TodaysWorkoutScreen() {
     }
   };
 
-  const handleFinishWorkout = async () => {
-    if (!workoutLogId) {
-      router.back();
-      return;
-    }
+ const handleFinishWorkout = async () => {
+  if (!workoutLogId) {
+    router.back();
+    return;
+  }
 
-    const durationMinutes = Math.round((new Date().getTime() - workoutStartTime.getTime()) / 60000);
-    const success = await completeWorkoutLog(workoutLogId, durationMinutes);
-    
-    if (success) {
-      Alert.alert('Workout Complete!', `Great job! Duration: ${durationMinutes} minutes`, [
-        { text: 'OK', onPress: () => router.back() }
-      ]);
-    } else {
-      router.back();
-    }
-  };
+  // Check if all exercises are complete
+  const remaining = exercises.length - completedExercises.size;
+  
+  if (remaining > 0) {
+    Alert.alert(
+      'Incomplete Workout',
+      `Are you sure brother? You only have ${remaining} exercise${remaining > 1 ? 's' : ''} left`,
+      [
+        { text: 'Go Back', style: 'cancel' },
+        { 
+          text: 'Finish Anyway', 
+          style: 'destructive',
+          onPress: async () => {
+            const durationMinutes = Math.round((new Date().getTime() - workoutStartTime.getTime()) / 60000);
+            const success = await completeWorkoutLog(workoutLogId, durationMinutes);
+            if (success) {
+              router.back();
+            }
+          }
+        }
+      ]
+    );
+    return;
+  }
+
+  const durationMinutes = Math.round((new Date().getTime() - workoutStartTime.getTime()) / 60000);
+  const success = await completeWorkoutLog(workoutLogId, durationMinutes);
+  
+  if (success) {
+    Alert.alert('Workout Complete!', `Great job! Duration: ${durationMinutes} minutes`, [
+      { text: 'OK', onPress: () => router.back() }
+    ]);
+  } else {
+    router.back();
+  }
+};
 
   return (
     <View style={styles.container}>
@@ -251,10 +284,10 @@ export default function TodaysWorkoutScreen() {
           );
         })}
 
-       {/* Finish Workout Button */}
+     {/* Finish Workout Button */}
 <Pressable style={styles.finishButton} onPress={handleFinishWorkout}>
   <Text style={styles.finishButtonText}>
-    {completedExercises.size === exercises.length ? 'Nice Work!!' : 'Finish Workout'}
+    {completedExercises.size === exercises.length || allExercisesComplete ? 'Nice Work!!' : 'Finish Workout'}
   </Text>
 </Pressable>
       </ScrollView>

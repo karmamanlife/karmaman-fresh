@@ -6,6 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getSupabase } from '../../src/lib/supabase';
 import { KoruBackground } from '../../src/components/KoruBackground';
 import { ProfileAvatar } from '../../src/components/ProfileAvatar';
+import { isTodaysWorkoutComplete } from '../../src/services/workoutService';
 import Svg, { Circle } from 'react-native-svg';
 
 type UserProfile = {
@@ -32,13 +33,20 @@ export default function HomeScreen() {
   daily_fats: 65,
 });
   const [consumed, setConsumed] = useState<ConsumedMacros>({ calories: 0, protein: 0, carbs: 0, fats: 0 });
+  const [workoutComplete, setWorkoutComplete] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       loadNutritionData();
     }, [])
   );
-
+useEffect(() => {
+  const checkWorkoutStatus = async () => {
+    const complete = await isTodaysWorkoutComplete(3); // 3 exercises in hardcoded workout
+    setWorkoutComplete(complete);
+  };
+  checkWorkoutStatus();
+}, []);
   const loadNutritionData = async () => {
     try {
       const supabase = getSupabase();
@@ -217,7 +225,7 @@ export default function HomeScreen() {
       <Text style={styles.workoutTitle}>Upper Body Strength</Text>
       <Text style={styles.workoutMeta}>45 min • 6 exercises</Text>
       <Pressable style={styles.workoutButton} onPress={() => router.push('/workout/today')}>
-  <Text style={styles.workoutButtonText}>Let's Go!</Text>
+  <Text style={styles.workoutButtonText}>{workoutComplete ? 'Nice Work!!' : "Let's Go!"}</Text>
 </Pressable>
     </View>
   </CardContent>

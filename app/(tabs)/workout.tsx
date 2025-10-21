@@ -4,9 +4,20 @@ import { Card, CardHeader, CardContent } from '../../src/components/ui/Card';
 import { KoruBackground } from '../../src/components/KoruBackground';
 import { ProfileAvatar } from '../../src/components/ProfileAvatar';
 import { useRouter } from 'expo-router';
+import { useState, useEffect } from 'react';
+import { isTodaysWorkoutComplete } from '../../src/services/workoutService';
 
 export default function WorkoutScreen() {
   const router = useRouter();
+  const [workoutComplete, setWorkoutComplete] = useState(false);
+
+useEffect(() => {
+  const checkWorkoutStatus = async () => {
+    const complete = await isTodaysWorkoutComplete(3);
+    setWorkoutComplete(complete);
+  };
+  checkWorkoutStatus();
+}, []);
 
  return (
   <View style={styles.container}>
@@ -42,7 +53,7 @@ export default function WorkoutScreen() {
                 style={styles.workoutButton} 
                 onPress={() => router.push('/workout/today')}
               >
-                <Text style={styles.workoutButtonText}>Let's Go!</Text>
+                <Text style={styles.workoutButtonText}>{workoutComplete ? 'Nice Work!!' : "Let's Go!"}</Text>
               </Pressable>
             </View>
           </CardContent>
