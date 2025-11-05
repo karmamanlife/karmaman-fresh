@@ -245,6 +245,7 @@ useEffect(() => {
                             placeholder="0"
                             placeholderTextColor="#999"
                             keyboardType="numeric"
+                            maxFontSizeMultiplier={1}
                             value={setData[exercise.id][setIndex].weight}
                             onChangeText={(value) => updateSetData(exercise.id, setIndex, 'weight', value)}
                             editable={!isCompleted}
@@ -258,6 +259,7 @@ useEffect(() => {
                             placeholder="0"
                             placeholderTextColor="#999"
                             keyboardType="numeric"
+                            maxFontSizeMultiplier={1}
                             value={setData[exercise.id][setIndex].reps}
                             onChangeText={(value) => updateSetData(exercise.id, setIndex, 'reps', value)}
                             editable={!isCompleted}
@@ -437,6 +439,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#42534A',
     textAlign: 'center',
+    paddingHorizontal: 8,
+  minWidth: 50,
   },
   inputLabel: {
     fontSize: 14,
