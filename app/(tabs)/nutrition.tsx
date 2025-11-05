@@ -17,7 +17,40 @@ import { searchFood, getFoodNutrients } from '../../src/services/foodApi';
 import { Card, CardHeader, CardContent } from '../../src/components/ui/Card';
 import { KoruBackground } from '../../src/components/KoruBackground';
 import { ProfileAvatar } from '../../src/components/ProfileAvatar';
-
+const COMMON_FOODS_BY_MEAL = {
+  1: [ // Breakfast
+    { name: 'Oats (100g)', calories: 389, protein: 17, carbs: 66, fats: 7 },
+    { name: 'Eggs (2 large)', calories: 144, protein: 12, carbs: 0.8, fats: 10 },
+    { name: 'Greek Yogurt (100g)', calories: 59, protein: 10, carbs: 3.6, fats: 0.4 },
+    { name: 'Whole Wheat Toast (2 slices)', calories: 160, protein: 8, carbs: 28, fats: 2 },
+    { name: 'Banana (1 medium)', calories: 105, protein: 1.3, carbs: 27, fats: 0.4 },
+    { name: 'Avocado (100g)', calories: 160, protein: 2, carbs: 9, fats: 15 },
+  ],
+  2: [ // Lunch
+    { name: 'Chicken Breast (100g)', calories: 165, protein: 31, carbs: 0, fats: 3.6 },
+    { name: 'Brown Rice (100g)', calories: 111, protein: 2.6, carbs: 23, fats: 0.9 },
+    { name: 'Salmon (100g)', calories: 208, protein: 20, carbs: 0, fats: 13 },
+    { name: 'Sweet Potato (100g)', calories: 86, protein: 1.6, carbs: 20, fats: 0.1 },
+    { name: 'Broccoli (100g)', calories: 34, protein: 2.8, carbs: 7, fats: 0.4 },
+    { name: 'Turkey Breast (100g)', calories: 135, protein: 30, carbs: 0, fats: 1 },
+  ],
+  3: [ // Dinner
+    { name: 'Steak (100g)', calories: 271, protein: 25, carbs: 0, fats: 19 },
+    { name: 'White Rice (100g)', calories: 130, protein: 2.7, carbs: 28, fats: 0.3 },
+    { name: 'Salmon (100g)', calories: 208, protein: 20, carbs: 0, fats: 13 },
+    { name: 'Pasta (100g)', calories: 131, protein: 5, carbs: 25, fats: 1.1 },
+    { name: 'Ground Beef (100g)', calories: 250, protein: 26, carbs: 0, fats: 15 },
+    { name: 'Mixed Vegetables (100g)', calories: 65, protein: 3, carbs: 13, fats: 0.3 },
+  ],
+  4: [ // Snacks
+    { name: 'Almonds (28g)', calories: 164, protein: 6, carbs: 6, fats: 14 },
+    { name: 'Protein Bar', calories: 200, protein: 20, carbs: 22, fats: 7 },
+    { name: 'Apple (1 medium)', calories: 95, protein: 0.5, carbs: 25, fats: 0.3 },
+    { name: 'Greek Yogurt (100g)', calories: 59, protein: 10, carbs: 3.6, fats: 0.4 },
+    { name: 'Peanut Butter (32g)', calories: 190, protein: 8, carbs: 7, fats: 16 },
+    { name: 'Cottage Cheese (100g)', calories: 98, protein: 11, carbs: 3.4, fats: 4.3 },
+  ],
+};
 type UserNutritionProfile = {
   daily_calories: number;
   daily_protein: number;
@@ -80,6 +113,7 @@ const getMealEmoji = (mealNumber: number): string => {
 
 export default function NutritionScreen() {
   const [profile, setProfile] = useState<UserNutritionProfile | null>(null);
+  const [userGoal, setUserGoal] = useState<'cut' | 'bulk' | 'maintain'>('maintain');
   const [mealHistory, setMealHistory] = useState<MealHistory[]>([]);
   const [dailyTotals, setDailyTotals] = useState<DailyTotals>({});
   const [showHistory, setShowHistory] = useState(false);
@@ -873,36 +907,75 @@ setStagedFoods([]);
             <ScrollView style={styles.modalScroll}>
               {!showManualEntry ? (
                 <>
-                  <View style={styles.searchSection}>
-                    <TextInput
-                      style={styles.searchInput}
-                      placeholder="Search for food..."
-                      value={searchQuery}
-                      onChangeText={handleSearch}
-                      autoCapitalize="none"
-                    />
-                    {searching && (
-                      <ActivityIndicator style={styles.searchLoader} color="#3F6B5C" />
-                    )}
-                  </View>
+                {/* Common Foods Quick Add */}
+      {/* Quick Add Card */}
+    <View style={styles.quickAddCard}>
+      <Text style={styles.quickAddTitle}>Quick Add</Text>
+      {COMMON_FOODS_BY_MEAL[selectedMeal]?.map((food, index) => (
+        <View key={index} style={styles.quickAddItem}>
+          <View style={styles.quickAddFoodInfo}>
+            <Text style={styles.quickAddFoodName}>{food.name}</Text>
+            <Text style={styles.quickAddFoodMacros}>
+              {food.calories}cal • P{food.protein}g • C{food.carbs}g • F{food.fats}g
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.quickAddButton}
+            onPress={() => {
+             setSelectedFoodForQuantity({
+  food_name: food.name,
+  serving_weight_grams: 100,
+  serving_unit: 'g',
+  serving_qty: 1,
+  nf_calories: food.calories,
+  nf_protein: food.protein,
+  nf_total_carbohydrate: food.carbs,
+  nf_total_fat: food.fats,
+  alt_measures: [{
+    serving_weight: 100,
+    measure: 'serving',
+    qty: 1,
+    seq: null,
+  }]
+});
+setSelectedServingOption({
+  serving_weight: 100,
+  measure: 'serving',
+  qty: 1,
+});
+setShowQuantityModal(true);
+            }}
+          >
+            <Text style={styles.quickAddButtonText}>+</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
+    </View>
+    <View style={styles.searchSection}>
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Search foods..."
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        onSubmitEditing={() => handleSearch(searchQuery)}
+      />
+      {searching && <ActivityIndicator style={styles.searchLoader} />}
+    </View>
 
-                  {searchResults.length > 0 && (
-                    <View style={styles.resultsSection}>
-                      {searchResults.map((result, idx) => (
-                        <TouchableOpacity
-                          key={idx}
-                          style={styles.resultItem}
-                          onPress={() => handleSelectFood(result.food_name)}
-                        >
-                          <Text style={styles.resultName}>{result.food_name}</Text>
-                          <Text style={styles.resultServing}>
-                            {result.serving_qty} {result.serving_unit}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-
+    {searchResults.length > 0 && (
+      <View style={styles.resultsSection}>
+        {searchResults.map((result, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.resultItem}
+            onPress={() => handleFoodSelect(result)}
+          >
+            <Text style={styles.resultName}>{result.food_name}</Text>
+            <Text style={styles.resultServing}>{result.food_description}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    )}
                   <TouchableOpacity
                     style={styles.manualEntryButton}
                     onPress={() => setShowManualEntry(true)}
@@ -926,6 +999,7 @@ setStagedFoods([]);
                     onChangeText={setManualCalories}
                     keyboardType="numeric"
                   />
+                  
                   <TextInput
                     style={styles.input}
                     placeholder="Protein (g) *"
@@ -1112,6 +1186,54 @@ const styles = StyleSheet.create({
   borderBottomColor: '#e0e0e0',
   marginBottom: 24,
 },
+quickAddCard: { 
+  margin: 16, 
+  marginBottom: 12, 
+  backgroundColor: '#fff', 
+  borderRadius: 12, 
+  padding: 16,
+},
+  quickAddTitle: { 
+    fontSize: 16, 
+    fontWeight: 'bold', 
+    color: '#065f46', 
+    marginBottom: 12,
+  },
+  quickAddItem: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  quickAddFoodInfo: { 
+    flex: 1,
+  },
+  quickAddFoodName: { 
+    fontSize: 14, 
+    fontWeight: '600', 
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  quickAddFoodMacros: { 
+    fontSize: 12, 
+    color: '#6b7280',
+  },
+  quickAddButton: { 
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#3F6B5C',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+  },
+  quickAddButtonText: { 
+    color: '#fff', 
+    fontSize: 20, 
+    fontWeight: 'bold',
+  },
   headerTop: {
   flexDirection: 'row',
   justifyContent: 'space-between',
