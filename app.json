@@ -27,9 +27,19 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "updates": {
+      "url": "https://u.expo.dev/52aa3b4b-cb75-4e96-b20d-a0ee742cf5b9"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "extra": {
       "NUTRITIONIX_APP_ID": "f2cb7916",
-      "NUTRITIONIX_API_KEY": "84fc927803fdcd6deb279a625870fa94"
+      "NUTRITIONIX_API_KEY": "84fc927803fdcd6deb279a625870fa94",
+      "router": {},
+      "eas": {
+        "projectId": "52aa3b4b-cb75-4e96-b20d-a0ee742cf5b9"
+      }
     },
     "plugins": [
       "expo-router",

@@ -357,10 +357,10 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
     paddingTop: 48,
-    paddingBottom: 12,
+    paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   headerTop: {
     flexDirection: 'row',
@@ -369,9 +369,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   logo: {
-    width: 250,
-    height: 60,
+    width: 170,
+    height: 42,
     tintColor: '#42534A',
+    marginLeft: -24,
   },
   date: {
     fontSize: 16,
