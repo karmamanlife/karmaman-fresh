@@ -1,0 +1,50 @@
+[33mcf8968e[m[33m ([m[1;32mfix/build-safe[m[33m)[m chore: add builds/ to gitignore
+[33mf26dab9[m chore: remove android build artifacts from git tracking
+[33m26b40a2[m Fix: Restore correct macro rings implementation with Quick Actions card
+[33m678ecdb[m fix: standardize profile header + add expo-image-picker
+[33m33a2175[m fix: add expo-image-picker dependency
+[33ma0589b2[m feat: dynamic workout completion states + confirmation alerts
+[33mbb8ee42[m feat: add workout logging to database + docs restructure
+[33m253f17e[m docs: restructure documentation into markdown files
+[33m4408d78[m Add ProfileAvatar to all screen headers, hide Profile tab, standardize all header layouts across screens
+[33m8a39d0b[m Add workout tab to nav, today's workout screen, and Let's Go button navigation
+[33mbd4c943[m Restructure: Workout tab now hub screen with Today's Workout, Report, Analysis cards
+[33mabf7943[m Complete UI overhaul: KoruBackground, transparent cards, circular macros, nutrition transparency
+[33ma600902[m Add profile picture upload with ArrayBuffer fix + auth check
+[33m5f5c108[m Add auth check to tabs + AsyncStorage to Supabase client
+[33m2471394[m Add auth check to tabs layout - redirect to sign-in if no session
+[33m3aa90bf[m Fix nutrition meal deletion + profile sign-in/out
+[33mc53fcae[m checkpoint before targeted TS fixes
+[33m3968956[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;32mfeature/clean-nutrition-tracking[m[33m)[m pre-fix snapshot
+[33m3450803[m Fixed API integration, nutrition search UI, home screen styling - API working on mobile, results rendering, button placement WIP
+[33m7f2bc0f[m UI fixes: macro layout, workout card resize, streak color red
+[33m99a4111[m[33m ([m[1;31morigin/main[m[33m)[m feat: food quantity modal + circular macro rings on home screen
+[33m269512b[m checkpoint: SDK 53 working state before upgrade to SDK 54
+[33m9c50d33[m feat: home screen live nutrition data with negative value indicators
+[33m735ca45[m feat: daily tracking on meal slots + 14 meal limit + copy picker + date format DD/MM/YY
+[33meb30084[m feat: multi-food meal staging with edit/finish functionality
+[33mfda53cd[m wip: add button visible, food logging functionality pending debug
+[33m05dc70e[m feat: manual food entry for non-API foods and custom meals
+[33m8aa3555[m feat: food search integration (pending API credentials verification)
+[33m4ae9ab7[m feat: dynamic meal slots with per-meal macro calculations
+[33m48ef687[m[33m ([m[1;31morigin/feature/workflow-fixes[m[33m, [m[1;32mfeature/workflow-fixes[m[33m)[m fix: navigation paths aligned, ready for fresh user testing
+[33md579e59[m fix: resolve all @/lib/supabase import issues across app and lib folders
+[33m7a046cd[m fix: consistent auth redirects to /(tabs), add eye toggle to sign-in
+[33mb322772[m BASELINE: establish working state before fixes
+[33m50b75fc[m[33m ([m[1;35mrefs/stash[m[33m)[m WIP on feature/home-streak-and-toasts: 7298af3 feat: add real Supabase database integration for workouts
+[33m0e81461[m index on feature/home-streak-and-toasts: 7298af3 feat: add real Supabase database integration for workouts
+[33m7298af3[m[33m ([m[1;31morigin/feature/home-streak-and-toasts[m[33m, [m[1;32mfeature/home-streak-and-toasts[m[33m)[m feat: add real Supabase database integration for workouts
+[33mcf160ff[m fix: restore working router and add workouts form with mock data
+[33m3735b8b[m feat(workouts): restore Add Workout form + history + AEST streak
+[33m7eacd06[m fix(router): restore root + tabs layouts and minimal Home to resolve blank web
+[33m7642434[m merge: resolve tabs layout to include Home/Explore/Board/Workouts/Nutrition
+[33m5574b70[m fix(tabs): ensure Home/Explore/Board/Workouts/Nutrition registered
+[33me5a2948[m[33m ([m[1;31morigin/feature/workouts-data[m[33m)[m fix(db): align code to workout_logs(for_date, completed); streak RPC uses for_date
+[33m7217115[m fix(workouts): close Text node in History section to resolve JSX parse error
+[33mc7361e7[m feat(workouts): add 30-day history section in Workouts screen
+[33me994c03[m feat(workouts): add create+log flows and client streak; hookup workout_logs
+[33m7f63985[m feat: workouts list reads from Supabase
+[33m98a035f[m feat: workouts list reads from Supabase (read-only)
+[33m76360f3[m[33m ([m[1;31morigin/feature/nutrition-tab[m[33m, [m[1;32mfeature/nutrition-tab[m[33m)[m feat: add Nutrition tab and register in tabs layout
+[33m995dfd9[m[33m ([m[1;31morigin/feature/workouts-tab[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mfeature/workouts-tab[m[33m)[m feat: add Workouts tab scaffold; register tab; stop tracking .env
+[33m1f9235d[m[33m ([m[1;33mtag: [m[1;33mv0.1.0[m[33m)[m karmaman: tabs + auth + board (realtime) working

@@ -308,24 +308,42 @@ if (allMeals.length > 14) {
     }
   };
 
-  const handleSelectFood = async (foodName: string) => {
-    try {
-      const foodData = await getFoodNutrients(foodName);
-      setSelectedFoodForQuantity(foodData);
-      if (foodData?.alt_measures && foodData.alt_measures.length > 0) {
-        setSelectedServingOption(foodData.alt_measures[0]);
-      } else {
-        setSelectedServingOption({
-          serving_weight: foodData?.serving_weight_grams || 100,
-          measure: foodData?.serving_unit || 'serving',
-          qty: foodData?.serving_qty || 1
-        });
-      }
-      setShowQuantityModal(true);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to fetch food data');
+ const handleSelectFood = async (food: any) => {
+  try {
+   const foodData = await getFoodNutrients(
+  food.food_name,
+  food._edamam_food_id,
+  food._edamam_measures?.[0]?.uri
+);
+// Attach Edamam measures to food data for serving options
+foodData.alt_measures = food._edamam_measures?.map((measure: any) => ({
+  serving_weight: measure.weight || 100,
+  measure: measure.label || 'serving',
+  qty: 1
+}));
+setSelectedFoodForQuantity(foodData);
+    
+    // Check for Edamam measures structure
+    if (food._edamam_measures && food._edamam_measures.length > 0) {
+      // Map Edamam measures to expected format
+      const edamamMeasure = food._edamam_measures[0];
+      setSelectedServingOption({
+        serving_weight: edamamMeasure.weight || 100,
+        measure: edamamMeasure.label || 'serving',
+        qty: 1
+      });
+    } else {
+      setSelectedServingOption({
+        serving_weight: foodData?.serving_weight_grams || 100,
+        measure: foodData?.serving_unit || 'serving',
+        qty: foodData?.serving_qty || 1
+      });
     }
-  };
+    setShowQuantityModal(true);
+  } catch (error) {
+    Alert.alert('Error', 'Failed to fetch food data');
+  }
+};
 
   const handleConfirmQuantity = async () => {
     try {
@@ -968,7 +986,7 @@ setShowQuantityModal(true);
           <TouchableOpacity
             key={index}
             style={styles.resultItem}
-            onPress={() => handleFoodSelect(result)}
+            onPress={() => handleSelectFood(result)}
           >
             <Text style={styles.resultName}>{result.food_name}</Text>
             <Text style={styles.resultServing}>{result.food_description}</Text>
