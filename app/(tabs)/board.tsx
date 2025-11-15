@@ -130,7 +130,7 @@ export default function Board() {
   <View style={s.header}>
   <View style={s.headerTop}>
     <Image
-      source={require('../../assets/images/karmamanFull.png')}
+      source={require('../../assets/images/karmamanFullResize.png')}
       style={s.logo}
       resizeMode="contain"
     />
@@ -178,9 +178,10 @@ const s = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
     paddingTop: 48,
-    paddingBottom: 12,
+    paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+    marginBottom: 16,
   },
   headerTop: {
   flexDirection: 'row',
@@ -189,11 +190,18 @@ const s = StyleSheet.create({
   marginBottom: 8,
   },
 
-  logo: {
-  width: 250,
-  height: 60,
-  marginBottom: 8,
-  tintColor: '#42534A',
+   logo: {
+    width: 170,
+    height: 42,
+    tintColor: '#42534A',
+    marginLeft: -24,
+},
+
+date: {
+  fontSize: 14,
+    marginLeft: 8,
+    color: '#666',
+    marginBottom: 8,
 },
   title: { 
     fontSize: 24, 

@@ -292,7 +292,7 @@ const uploadProfilePicture = async (uri) => {
   <View style={styles.header}>
    <View style={styles.headerTop}>
      <Image
-       source={require('../../assets/images/karmamanFull.png')}
+       source={require('../../assets/images/karmamanFullResize.png')}
        style={styles.logo}
        resizeMode="contain"
      />
@@ -522,15 +522,17 @@ headerTop: {
   alignItems: 'center',
   marginBottom: 8,
 },
-logo: {
-  width: 200,
-  height: 60,
-  marginBottom: 8,
-  tintColor: '#42534A',
+ logo: {
+    width: 170,
+    height: 42,
+    tintColor: '#42534A',
+    marginLeft: -24,
 },
 date: {
-  fontSize: 16,
-  color: '#666',
+  fontSize: 14,
+    marginLeft: 8,
+    color: '#666',
+    marginBottom: 8,
 },
 content: {
   padding: 16,

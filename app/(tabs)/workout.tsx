@@ -11,23 +11,22 @@ export default function WorkoutScreen() {
   const router = useRouter();
   const [workoutComplete, setWorkoutComplete] = useState(false);
 
-useEffect(() => {
-  const checkWorkoutStatus = async () => {
-    const complete = await isTodaysWorkoutComplete(3);
-    setWorkoutComplete(complete);
-  };
-  checkWorkoutStatus();
-}, []);
+  useEffect(() => {
+    const checkWorkoutStatus = async () => {
+      const complete = await isTodaysWorkoutComplete(3);
+      setWorkoutComplete(complete);
+    };
+    checkWorkoutStatus();
+  }, []);
 
- return (
-  <View style={styles.container}>
-    <KoruBackground />
-    
-    <ScrollView style={styles.scrollContent} contentContainerStyle={styles.content}>
+  return (
+    <View style={styles.container}>
+      <KoruBackground />
+      
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <Image
-            source={require('../../assets/images/karmamanFull.png')}
+            source={require('../../assets/images/karmamanFullResize.png')}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -37,6 +36,8 @@ useEffect(() => {
       <Text style={styles.date}>
         {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
       </Text>
+
+      <ScrollView style={styles.scrollContent} contentContainerStyle={styles.content}>
         {/* Today's Workout Card */}
         <Card variant="outlined">
           <CardHeader title="Today's Workout" />
@@ -49,8 +50,8 @@ useEffect(() => {
             <View style={styles.workoutOverlay}>
               <Text style={styles.workoutTitle}>Upper Body Strength</Text>
               <Text style={styles.workoutMeta}>45 min • 6 exercises</Text>
-              <Pressable 
-                style={styles.workoutButton} 
+              <Pressable
+                style={styles.workoutButton}
                 onPress={() => router.push('/workout/today')}
               >
                 <Text style={styles.workoutButtonText}>{workoutComplete ? 'Nice Work!!' : "Let's Go!"}</Text>
@@ -61,8 +62,8 @@ useEffect(() => {
 
         {/* Workout Report Card */}
         <Card variant="outlined">
-          <CardHeader 
-            title="Workout Report" 
+          <CardHeader
+            title="Workout Report"
             subtitle="Track your progress"
           />
           <CardContent>
@@ -85,8 +86,8 @@ useEffect(() => {
 
         {/* Analysis Card */}
         <Card variant="outlined">
-          <CardHeader 
-            title="Performance Analysis" 
+          <CardHeader
+            title="Performance Analysis"
             subtitle="Your strength trends"
           />
           <CardContent>
@@ -141,29 +142,35 @@ const styles = StyleSheet.create({
   scrollContent: {
     flex: 1,
   },
+  content: {
+    padding: 16,
+    gap: 16,
+  },
   header: {
     paddingHorizontal: 16,
     paddingTop: 48,
-    paddingBottom: 12,
+    paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+    marginBottom: 16,
   },
- headerTop: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: 8,
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   logo: {
-    width: 250,
-    height: 60,
-    marginBottom: 8,
+    width: 170,
+    height: 42,
     tintColor: '#42534A',
+    marginLeft: -24,
   },
   date: {
-    fontSize: 16,
+    fontSize: 14,
+    marginLeft: 8,
     color: '#666',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   workoutBackground: {
     position: 'absolute',
@@ -176,7 +183,7 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   workoutOverlay: {
-    padding: 0,
+    padding: 20,
     minHeight: 150,
     justifyContent: 'center',
   },
@@ -191,17 +198,22 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   workoutButton: {
-    backgroundColor: '#D40C19',
-    paddingVertical: 18,
-    paddingHorizontal: 36,
+    backgroundColor: 'rgba(66, 83, 74, 0.3)',
+    paddingVertical: 13,
+    paddingHorizontal: 27,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DCD1C1',
     marginTop: 16,
     alignSelf: 'flex-start',
   },
   workoutButtonText: {
-    color: '#fff',
+    color: '#D40C19',
     fontSize: 24,
     fontWeight: '600',
+    textShadowColor: '#fff',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 4,
   },
   reportContent: {
     flexDirection: 'row',

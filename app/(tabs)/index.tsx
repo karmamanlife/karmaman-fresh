@@ -202,7 +202,7 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <Image
-            source={require('../../assets/images/karmamanFull.png')}
+            source={require('../../assets/images/karmamanFullResize.png')}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -375,8 +375,8 @@ const styles = StyleSheet.create({
     marginLeft: -24,
   },
   date: {
-    fontSize: 16,
-    marginLeft: 16,
+    fontSize: 14,
+    marginLeft: 8,
     color: '#666',
     marginBottom: 16,
   },
@@ -477,18 +477,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
-  workoutButton: {
-    backgroundColor: '#D40C19',
-    paddingVertical: 18,
-    paddingHorizontal: 36,
+ workoutButton: {
+    backgroundColor: 'rgba(66, 83, 74, 0.3)',
+    paddingVertical: 13,
+    paddingHorizontal: 27,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DCD1C1',
     marginTop: 16,
     alignSelf: 'flex-start',
   },
   workoutButtonText: {
-    color: '#fff',
+    color: '#D40C19',
     fontSize: 24,
     fontWeight: '600',
+    textShadowColor: '#fff',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 4,
   },
   workoutBackground: {
     position: 'absolute',

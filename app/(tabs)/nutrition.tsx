@@ -17,6 +17,7 @@ import { searchFood, getFoodNutrients } from '../../src/services/foodApi';
 import { Card, CardHeader, CardContent } from '../../src/components/ui/Card';
 import { KoruBackground } from '../../src/components/KoruBackground';
 import { ProfileAvatar } from '../../src/components/ProfileAvatar';
+
 const COMMON_FOODS_BY_MEAL = {
   1: [ // Breakfast
     { name: 'Oats (100g)', calories: 389, protein: 17, carbs: 66, fats: 7 },
@@ -51,6 +52,7 @@ const COMMON_FOODS_BY_MEAL = {
     { name: 'Cottage Cheese (100g)', calories: 98, protein: 11, carbs: 3.4, fats: 4.3 },
   ],
 };
+
 type UserNutritionProfile = {
   daily_calories: number;
   daily_protein: number;
@@ -168,10 +170,12 @@ export default function NutritionScreen() {
   const calculateDailyTotals = (meals: MealHistory[]) => {
     const todayStart = getTodayStart();
     const todayEnd = getTodayEnd();
+
     const todayMeals = meals.filter(meal => {
       const mealDate = new Date(meal.logged_at).toISOString();
       return mealDate >= todayStart && mealDate <= todayEnd;
     });
+
     const totals: DailyTotals = {};
     todayMeals.forEach(meal => {
       if (!totals[meal.meal_number]) {
@@ -182,6 +186,7 @@ export default function NutritionScreen() {
       totals[meal.meal_number].carbs += meal.total_carbs;
       totals[meal.meal_number].fats += meal.total_fats;
     });
+
     return totals;
   };
 
@@ -199,7 +204,6 @@ export default function NutritionScreen() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       console.log('❌ No user logged in - using defaults');
-      // Silently use default profile (no Alert)
       setProfile({ daily_calories: 2000, daily_protein: 150, daily_carbs: 200, daily_fats: 65 });
       setMealHistory([]);
       setDailyTotals({});
@@ -208,13 +212,13 @@ export default function NutritionScreen() {
 
  console.log('✅ User logged in:', user.id);
 
-// Load user's nutrition profile
 try {
       const { data: profileData, error: profileError } = await supabase
         .from('user_nutrition_profiles')
         .select('*')
         .eq('user_id', user.id)
         .single();
+
       if (profileError) {
         setProfile({ daily_calories: 2000, daily_protein: 150, daily_carbs: 200, daily_fats: 65 });
       } else if (profileData) {
@@ -224,7 +228,6 @@ try {
       setProfile({ daily_calories: 2000, daily_protein: 150, daily_carbs: 200, daily_fats: 65 });
     }
 
-    // Load meal history
     try {
       const { data: historyData } = await supabase
         .from('user_meals_history')
@@ -232,6 +235,7 @@ try {
         .eq('user_id', user.id)
         .order('logged_at', { ascending: false })
         .limit(50);
+
       if (historyData) {
   const allMeals = historyData as MealHistory[];
   console.log('🔵 Loaded meals from DB, total count:', allMeals.length);
@@ -242,7 +246,6 @@ try {
         const totals = calculateDailyTotals(allMeals);
        setDailyTotals({...totals});
 
-// Cleanup: delete meals beyond 14
 if (allMeals.length > 14) {
   console.log('🔵 Cleaning up', allMeals.length - 14, 'old meals');
   const mealsToDelete = allMeals.slice(14);
@@ -270,15 +273,15 @@ if (allMeals.length > 14) {
       console.log('❌ Supabase client is null');
       return;
     }
-    
+   
     console.log('✅ Supabase client OK');
-    
+   
     const { data: allMeals } = await supabase
       .from('user_meals_history')
       .select('id, logged_at')
       .eq('user_id', userId)
       .order('logged_at', { ascending: false });
-    
+   
     if (allMeals && allMeals.length > 14) {
       const mealsToDelete = allMeals.slice(14);
       const idsToDelete = mealsToDelete.map(m => m.id);
@@ -315,17 +318,16 @@ if (allMeals.length > 14) {
   food._edamam_food_id,
   food._edamam_measures?.[0]?.uri
 );
-// Attach Edamam measures to food data for serving options
+
 foodData.alt_measures = food._edamam_measures?.map((measure: any) => ({
   serving_weight: measure.weight || 100,
   measure: measure.label || 'serving',
   qty: 1
 }));
+
 setSelectedFoodForQuantity(foodData);
-    
-    // Check for Edamam measures structure
+   
     if (food._edamam_measures && food._edamam_measures.length > 0) {
-      // Map Edamam measures to expected format
       const edamamMeasure = food._edamam_measures[0];
       setSelectedServingOption({
         serving_weight: edamamMeasure.weight || 100,
@@ -349,12 +351,15 @@ setSelectedFoodForQuantity(foodData);
     try {
       const supabase = getSupabase();
       if (!supabase) return;
+
       if (!selectedFoodForQuantity || !selectedServingOption) return;
+
       const quantity = parseFloat(foodQuantity) || 1;
       const baseWeight = selectedFoodForQuantity.serving_weight_grams;
       const selectedWeight = selectedServingOption.serving_weight;
       const weightMultiplier = selectedWeight / baseWeight;
       const totalMultiplier = weightMultiplier * quantity;
+
       const food: Food = {
         name: selectedFoodForQuantity.food_name,
         calories: Math.round(selectedFoodForQuantity.nf_calories * totalMultiplier),
@@ -363,6 +368,7 @@ setSelectedFoodForQuantity(foodData);
         fats: parseFloat((selectedFoodForQuantity.nf_total_fat * totalMultiplier).toFixed(2)),
         serving_size: `${quantity} ${selectedServingOption.measure}${quantity > 1 ? 's' : ''} (${Math.round(selectedWeight * quantity)}g)`,
       };
+
       await supabase.from('food_cache').upsert({
         food_name: food.name,
         calories: food.calories,
@@ -371,6 +377,7 @@ setSelectedFoodForQuantity(foodData);
         fats: food.fats,
         serving_size: food.serving_size,
       });
+
       setStagedFoods(prev => [...prev, food]);
       setShowQuantityModal(false);
       setSelectedFoodForQuantity(null);
@@ -385,52 +392,46 @@ setSelectedFoodForQuantity(foodData);
 
  const handleRemoveStagedFood = async (index: number) => {
   const newStaged = stagedFoods.filter((_, i) => i !== index);
-  
+ 
   if (editingMealId) {
     try {
       console.log('🔵 Removing food from meal, editingMealId:', editingMealId);
-      
+     
       const supabase = getSupabase();
       if (!supabase) {
         console.log('❌ Supabase client is null');
         Alert.alert('Error', 'Database not initialized');
         return;
       }
-      
+     
       console.log('✅ Supabase client OK');
-      
+     
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         console.log('❌ No user logged in');
         Alert.alert('Error', 'Not logged in');
         return;
       }
-    
-      
+   
+     
       console.log('✅ User logged in:', user.id);
-      
-      // If no foods left, delete the entire meal
+     
       if (newStaged.length === 0) {
         console.log('🔵 No foods left, deleting entire meal ID:', editingMealId);
 console.log('🔵 Attempting to delete meal with ID:', editingMealId);
-
 const { error: deleteError } = await supabase
   .from('user_meals_history')
   .delete()
   .eq('id', editingMealId);
-
 console.log('🔵 Delete error:', deleteError);
 console.log('🔵 Delete successful:', !deleteError);
-
         if (deleteError) {
           console.log('❌ Delete error:', deleteError);
           Alert.alert('Error', 'Failed to delete meal');
           return;
         }
-        
+       
       console.log('✅ Meal deleted successfully');
-
-// Small delay to ensure DB update completes
 await new Promise(resolve => setTimeout(resolve, 500));
 await loadUserData();
 setStagedFoods([]);
@@ -440,15 +441,14 @@ setStagedFoods([]);
         Alert.alert('Success', 'Meal deleted');
         return;
       }
-      
-      // Update meal with remaining foods
+     
       console.log('🔵 Updating meal with', newStaged.length, 'foods remaining');
-      
+     
       const totalCalories = newStaged.reduce((sum, f) => sum + f.calories, 0);
       const totalProtein = newStaged.reduce((sum, f) => sum + f.protein, 0);
       const totalCarbs = newStaged.reduce((sum, f) => sum + f.carbs, 0);
       const totalFats = newStaged.reduce((sum, f) => sum + f.fats, 0);
-      
+     
       const { error: updateError } = await supabase
         .from('user_meals_history')
         .update({
@@ -459,15 +459,15 @@ setStagedFoods([]);
           total_fats: totalFats,
         })
         .eq('id', editingMealId);
-      
+     
       if (updateError) {
         console.log('❌ Update error:', updateError);
         Alert.alert('Error', 'Failed to update meal');
         return;
       }
-      
+     
       console.log('✅ Meal updated successfully');
-      
+     
       await loadUserData();
       setStagedFoods(newStaged);
       setRefreshKey(prev => prev + 1);
@@ -476,7 +476,6 @@ setStagedFoods([]);
       Alert.alert('Error', 'Something went wrong');
     }
   } else {
-    // Not editing, just remove from staged
     setStagedFoods(newStaged);
   }
 };
@@ -486,6 +485,7 @@ setStagedFoods([]);
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
+
     const food: Food = {
       name: manualName,
       calories: parseInt(manualCalories),
@@ -494,6 +494,7 @@ setStagedFoods([]);
       fats: parseFloat(manualFats),
       serving_size: manualServing || 'serving',
     };
+
     setStagedFoods(prev => [...prev, food]);
     setRefreshKey(prev => prev + 1);
     setManualName('');
@@ -508,24 +509,24 @@ setStagedFoods([]);
 
  const handleFinishMeal = async () => {
   console.log('🔵 FINISH MEAL BUTTON PRESSED');
-  
+ 
   if (stagedFoods.length === 0) {
     Alert.alert('Error', 'Please add at least one food to the meal');
     return;
   }
-  
+ 
   try {
     console.log('🔵 Starting meal save...');
-    
+   
     const supabase = getSupabase();
     if (!supabase) {
       console.log('❌ Supabase client is null');
       Alert.alert('Error', 'Database not initialized');
       return;
     }
-    
+   
     console.log('✅ Supabase client OK');
-    
+   
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       console.log('❌ No user logged in');
@@ -533,16 +534,16 @@ setStagedFoods([]);
       return;
     }
     console.log('✅ User logged in:', user.id);
-    
-    
+   
+   
     const totalCalories = stagedFoods.reduce((sum, f) => sum + f.calories, 0);
     const totalProtein = stagedFoods.reduce((sum, f) => sum + f.protein, 0);
     const totalCarbs = stagedFoods.reduce((sum, f) => sum + f.carbs, 0);
     const totalFats = stagedFoods.reduce((sum, f) => sum + f.fats, 0);
     const mealName = getMealLabel(selectedMeal);
-    
+   
     console.log('🔵 Inserting meal:', mealName, totalCalories, 'cal');
-    
+   
     const { error } = await supabase.from('user_meals_history').insert({
       user_id: user.id,
       meal_number: selectedMeal,
@@ -553,15 +554,15 @@ setStagedFoods([]);
       total_carbs: totalCarbs,
       total_fats: totalFats,
     });
-    
+   
     if (error) {
       console.log('❌ Insert error:', error);
       Alert.alert('Error', 'Failed to save meal');
       return;
     }
-    
+   
     console.log('✅ Meal saved successfully');
-    
+   
     await enforceHistoryLimit(user.id);
     await loadUserData();
     setStagedFoods([]);
@@ -589,12 +590,16 @@ setStagedFoods([]);
 
   const handleCopyToMeal = async (targetMealNumber: number) => {
     if (!mealToCopy) return;
+
     try {
       const supabase = getSupabase();
       if (!supabase) return;
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
       const targetMealName = getMealLabel(targetMealNumber);
+
       const { error } = await supabase.from('user_meals_history').insert({
         user_id: user.id,
         meal_number: targetMealNumber,
@@ -605,10 +610,12 @@ setStagedFoods([]);
         total_carbs: mealToCopy.total_carbs,
         total_fats: mealToCopy.total_fats,
       });
+
       if (error) {
         Alert.alert('Error', 'Failed to copy meal');
         return;
       }
+
       await enforceHistoryLimit(user.id);
       await loadUserData();
       setShowCopyPicker(false);
@@ -696,7 +703,7 @@ setStagedFoods([]);
     <View style={styles.header}>
   <View style={styles.headerTop}>
     <Image
-      source={require('../../assets/images/karmamanFull.png')}
+      source={require('../../assets/images/karmamanFullResize.png')}
       style={styles.logo}
       resizeMode="contain"
     />
@@ -706,7 +713,7 @@ setStagedFoods([]);
 <Text style={styles.date}>
   {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
 </Text>
-  
+ 
     <Card variant="outlined" style={styles.targetsCard}>
         <CardHeader title="Daily Targets" />
         <CardContent>
@@ -728,7 +735,6 @@ setStagedFoods([]);
               <Text style={styles.macroLabel}>Target</Text>
             </View>
           </View>
-
           <View style={styles.remainingRow}>
             <View style={styles.remainingItem}>
               <Text style={[styles.remainingValue, remaining.calories < 0 && styles.overTarget]}>
@@ -757,6 +763,7 @@ setStagedFoods([]);
           </View>
         </CardContent>
       </Card>
+
 <Pressable
   style={styles.historyButton}
   onPress={() => setShowHistory(!showHistory)}
@@ -765,8 +772,9 @@ setStagedFoods([]);
     {showHistory ? 'Today' : 'History'}
   </Text>
 </Pressable>
-      <ScrollView 
-  style={styles.content} 
+
+      <ScrollView
+  style={styles.content}
   contentContainerStyle={styles.contentContainer}
   key={refreshKey}
 >
@@ -969,6 +977,7 @@ setShowQuantityModal(true);
         </View>
       ))}
     </View>
+
     <View style={styles.searchSection}>
       <TextInput
         style={styles.searchInput}
@@ -994,6 +1003,7 @@ setShowQuantityModal(true);
         ))}
       </View>
     )}
+
                   <TouchableOpacity
                     style={styles.manualEntryButton}
                     onPress={() => setShowManualEntry(true)}
@@ -1017,7 +1027,7 @@ setShowQuantityModal(true);
                     onChangeText={setManualCalories}
                     keyboardType="numeric"
                   />
-                  
+                 
                   <TextInput
                     style={styles.input}
                     placeholder="Protein (g) *"
@@ -1086,7 +1096,7 @@ setShowQuantityModal(true);
         <View style={styles.modalOverlay}>
           <View style={styles.quantityModalContent}>
             <Text style={styles.quantityModalTitle}>{selectedFoodForQuantity?.food_name}</Text>
-            
+           
             <View style={styles.servingOptionsContainer}>
               <Text style={styles.servingOptionsLabel}>Serving Size:</Text>
               <ScrollView
@@ -1196,49 +1206,49 @@ setShowQuantityModal(true);
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { 
-  paddingHorizontal: 16, 
-  paddingTop: 48, 
-  paddingBottom: 12, 
-  borderBottomWidth: 1, 
+  header: {
+  paddingHorizontal: 16,
+  paddingTop: 48,
+  paddingBottom: 8,
+  borderBottomWidth: 1,
   borderBottomColor: '#e0e0e0',
-  marginBottom: 24,
+  marginBottom: 16,
 },
-quickAddCard: { 
-  margin: 16, 
-  marginBottom: 12, 
-  backgroundColor: '#fff', 
-  borderRadius: 12, 
+quickAddCard: {
+  margin: 16,
+  marginBottom: 12,
+  backgroundColor: '#fff',
+  borderRadius: 12,
   padding: 16,
 },
-  quickAddTitle: { 
-    fontSize: 16, 
-    fontWeight: 'bold', 
-    color: '#065f46', 
+  quickAddTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#065f46',
     marginBottom: 12,
   },
-  quickAddItem: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
+  quickAddItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
-  quickAddFoodInfo: { 
+  quickAddFoodInfo: {
     flex: 1,
   },
-  quickAddFoodName: { 
-    fontSize: 14, 
-    fontWeight: '600', 
+  quickAddFoodName: {
+    fontSize: 14,
+    fontWeight: '600',
     color: '#1f2937',
     marginBottom: 4,
   },
-  quickAddFoodMacros: { 
-    fontSize: 12, 
+  quickAddFoodMacros: {
+    fontSize: 12,
     color: '#6b7280',
   },
-  quickAddButton: { 
+  quickAddButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -1247,9 +1257,9 @@ quickAddCard: {
     justifyContent: 'center',
     marginLeft: 12,
   },
-  quickAddButtonText: { 
-    color: '#fff', 
-    fontSize: 20, 
+  quickAddButtonText: {
+    color: '#fff',
+    fontSize: 20,
     fontWeight: 'bold',
   },
   headerTop: {
@@ -1259,36 +1269,38 @@ quickAddCard: {
   marginBottom: 8,
 },
 logo: {
-  width: 250,
-  height: 60,
+  width: 170,
+  height: 42,
   tintColor: '#42534A',
+  marginLeft: -24,
 },
 date: {
-  fontSize: 16,
-  marginLeft: 16,
+  fontSize: 14,
+  marginLeft: 8,
   color: '#666',
+  marginBottom: 8,
 },
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#065f46' },
   historyButton: {
   alignSelf: 'flex-end',
-  paddingVertical: 8,
-  paddingHorizontal: 16,
+  paddingVertical: 4,
+  paddingHorizontal: 8,
   backgroundColor: '#3F6B5C',
   borderRadius: 6,
-  marginBottom: 16,
-  marginRight: 16,
+  marginBottom: 8,
+  marginRight: 8,
 },
   historyButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  targetsCard: { marginHorizontal: 16, marginTop: 16 },
-  macrosRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 16 },
+  targetsCard: { marginHorizontal: 16, marginTop: 4 },
+  macrosRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 4 },
   macroItem: { alignItems: 'center' },
-  macroValue: { fontSize: 18, fontWeight: 'bold', color: '#065f46' },
-  macroLabel: { fontSize: 12, color: '#6b7280', marginTop: 4 },
-  remainingRow: { flexDirection: 'row', justifyContent: 'space-around', paddingTop: 12, borderTopWidth: 1, borderTopColor: '#e5e7eb' },
+  macroValue: { fontSize: 10, fontWeight: 'bold', color: '#065f46' },
+  macroLabel: { fontSize: 7, color: '#6b7280', marginTop: 1 },
+  remainingRow: { flexDirection: 'row', justifyContent: 'space-around', paddingTop: 3, borderTopWidth: 1, borderTopColor: '#e5e7eb' },
   remainingItem: { alignItems: 'center' },
-  remainingValue: { fontSize: 16, fontWeight: '600', color: '#059669' },
+  remainingValue: { fontSize: 9, fontWeight: '600', color: '#059669' },
   overTarget: { color: '#dc2626' },
-  remainingLabel: { fontSize: 11, color: '#6b7280', marginTop: 2 },
+  remainingLabel: { fontSize: 6, color: '#6b7280', marginTop: 0 },
   content: { flex: 1 },
   contentContainer: { padding: 16, gap: 12 },
   mealEmoji: { fontSize: 24 },
