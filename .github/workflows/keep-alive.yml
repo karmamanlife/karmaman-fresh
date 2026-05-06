@@ -34,3 +34,4 @@ jobs:
             console.log('Supabase pinged successfully');
           })();
           "
+
