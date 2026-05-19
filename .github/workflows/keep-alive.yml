@@ -27,10 +27,12 @@ jobs:
         run: |
           node -e "
           const { createClient } = require('@supabase/supabase-js');
+          console.log('URL:', process.env.SUPABASE_URL ? 'SET' : 'MISSING');
+          console.log('KEY:', process.env.SUPABASE_KEY ? 'SET' : 'MISSING');
           const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
           (async () => {
             const { data, error } = await supabase.from('profiles').select('id').limit(1);
-            if (error) { console.error('Ping failed:', error); process.exit(1); }
+            if (error) { console.error('Ping failed:', JSON.stringify(error)); process.exit(1); }
             console.log('Supabase pinged successfully');
           })();
           "
