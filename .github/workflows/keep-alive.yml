@@ -1,19 +1,9 @@
-name: Keep Supabase Alive
-
-on:
-  schedule:
-    - cron: '0 9 * * 1,4'
-  workflow_dispatch:
-
-jobs:
-  ping:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Ping Supabase
+- name: Ping Supabase
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
+
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
             "$SUPABASE_URL/rest/v1/profiles?select=id&limit=1" \
             -H "apikey: $SUPABASE_KEY" \
